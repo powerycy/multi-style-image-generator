@@ -1,0 +1,50 @@
+{
+  "skill_name": "multi-style-image-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我写一个杭州西湖的原神风格图片提示词，不用出图",
+      "expected_output": "只返回结构化提示词代码块；使用原神风格；包含真实地点中文 UI 或轻量 HUD；不调用图像生成工具。"
+    },
+    {
+      "id": 2,
+      "prompt": "使用 $multi-style-image-generator 产出一个黑神话悟空风格的敦煌石窟图，不要 UI",
+      "expected_output": "直接调用图像生成工具；使用暗黑中式神话动作 RPG 风格；无 HUD、无 UI、无任何可读文字；不只返回提示词。"
+    },
+    {
+      "id": 3,
+      "prompt": "生成一张宝可梦风格的故宫图，UI、HUD、文字都显示",
+      "expected_output": "直接调用图像生成工具；使用彩色怪物收集冒险风格；包含中文对话框或遭遇提示、轻量游戏 HUD；默认原创训练家和原创伙伴。"
+    },
+    {
+      "id": 4,
+      "prompt": "给我一段星露谷物语风格的茶园提示词，不用出图",
+      "expected_output": "只返回提示词代码块；使用温暖像素农场生活模拟风格；强调像素农场、作物、工具栏或无 UI 规则。"
+    },
+    {
+      "id": 5,
+      "prompt": "用潜水员戴夫风格画一张三亚海底探险图",
+      "expected_output": "直接调用图像生成工具；使用像素海底冒险经营风格；包含潜水员、氧气/深度 UI 或轻量 UI、鱼群和珊瑚。"
+    },
+    {
+      "id": 6,
+      "prompt": "使用 $multi-style-image-generator 生成一张凡人修仙传风格的黄山宗门图，不要 UI",
+      "expected_output": "直接调用图像生成工具；使用东方修仙成长动画风格；默认原创修士或宗门弟子；无 HUD、无 UI、无任何可读文字。"
+    },
+    {
+      "id": 7,
+      "prompt": "给我一段诡秘之主风格的上海外滩提示词，不用出图，带轻量 UI",
+      "expected_output": "只返回提示词代码块；使用维多利亚蒸汽神秘学悬疑风格；默认原创侦探或非凡者；保留轻量线索/调查 UI。"
+    },
+    {
+      "id": 8,
+      "prompt": "使用 $multi-style-image-generator 生成一张原神风格的张家界 360 度环景照，不要 UI",
+      "expected_output": "直接调用图像生成工具；使用原神风格；无 HUD、无 UI、无任何可读文字；最终生图 prompt 必须包含“360 度等距柱状投影图像。”；若拿到生成图路径，创建并返回可交互 360 预览 HTML 链接；若内置图像工具没有返回路径，尝试运行 scripts/extract_latest_image_from_session.py 落盘最近的 session 内联图片；若 session 也没有可提取 data URI，说明内置工具没有可落盘数据，保证落盘需改走 CLI/API fallback。"
+    },
+    {
+      "id": 9,
+      "prompt": "使用 $multi-style-image-generator 生成一张诡秘之主风格的故宫 360 度环景图",
+      "expected_output": "直接调用图像生成工具；使用维多利亚蒸汽神秘学悬疑风格；轻量调查 UI；最终生图 prompt 必须包含“360 度等距柱状投影图像。”；若拿到生成图路径，运行 scripts/create_panorama_viewer.py --embed-image 生成可拖拽环景预览 HTML；若拿不到路径，运行 scripts/extract_latest_image_from_session.py --out-dir output/imagegen --name <slug> 尝试解码最近的 session 内联图片，再生成 HTML；最终回复中提供图片和 HTML 链接；若路径和 session data URI 都不可用，说明内置工具没有可落盘数据，保证落盘需改走 CLI/API fallback。"
+    }
+  ]
+}
