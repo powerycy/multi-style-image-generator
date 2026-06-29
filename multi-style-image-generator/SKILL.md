@@ -1,11 +1,11 @@
 ---
 name: multi-style-image-generator
-description: 当用户要求按指定游戏、动画、小说改编或幻想作品视觉风格生成图片或提示词时使用，支持原神/Genshin Impact、黑神话悟空/Black Myth Wukong、凡人修仙传、诡秘之主/Lord of the Mysteries、宝可梦/Pokemon、星露谷物语/Stardew Valley、潜水员戴夫/Dave the Diver 等风格，并支持上传照片参考、人物可识别风格化、真实地点风格化、360 度环景照/全景/等距柱状投影模式。触发词包括：生成图、出图、写提示词、上传图片、用我的脸、参考我的照片、360 度环景照、原神风格、黑神话风格、修仙风格、诡秘之主风格、宝可梦风格、星露谷风格、潜水员戴夫风格。
+description: Use when the user asks to generate or write prompts for game-inspired, animation-like, fantasy, xianxia, occult, pixel, creature-adventure, uploaded-photo stylization, real-place stylization, UI/HUD screenshots, or 360 equirectangular panorama images in Codex. Triggers include 出图、生成图、写提示词、上传图片、用我的脸、参考照片、360 度环景照、原神风格、黑神话风格、修仙风格、诡秘之主风格、宝可梦风格、星露谷风格、潜水员戴夫风格。
 ---
 
 # 多风格图片生成
 
-用这个技能生成稳定的游戏/幻想作品视觉风格图片提示词，或在 Codex 中直接调用图像生成工具出图。
+用这个技能生成稳定的多风格视觉图片提示词，或在 Codex 中直接调用图像生成工具出图。重点是风格路由、主体可识别、画风统一、UI 模式控制和 360 环景预览。
 
 ## 自带依赖
 
