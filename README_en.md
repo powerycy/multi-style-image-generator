@@ -18,6 +18,10 @@ Codex skill for generating game, animation, novel-adaptation, and fantasy-style 
   - Dave the Diver-like pixel underwater adventure
 - Lightweight, full, or no UI/HUD modes.
 - Real landmark stylization while preserving recognizability.
+- Uploaded photo reference workflows:
+  - use one image for the scene and another for identity
+  - preserve user-specified outfit, sunglasses, hat, props, and pose
+  - redraw the person, face, clothing, props, and background into one unified target style instead of pasting a photo-like person onto a stylized background
 - 360 panorama workflow:
   - prompts for `360 度等距柱状投影图像`
   - enforces or normalizes to 2:1 aspect ratio
@@ -67,6 +71,12 @@ Generate a normal image:
 
 ```text
 使用 $multi-style-image-generator 生成一张诡秘之主风格的故宫，轻量 UI，直接出图。
+```
+
+Stylize uploaded photos:
+
+```text
+使用 $multi-style-image-generator 把我上传的照片改成 7 种风格。第一张参考场景和穿着，第二张参考我的脸，要能看出来是我；墨镜戴上，人物和背景都要统一成对应画风，不要像抠图贴背景。
 ```
 
 Generate a 360 panorama and interactive preview:
