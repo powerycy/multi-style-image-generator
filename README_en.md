@@ -6,6 +6,11 @@ A Codex skill for multi-style image generation. It turns style routing, structur
 
 If this project is useful to you, please consider starring it on GitHub to support future updates.
 
+## Author & Community
+
+- WeChat: loonges
+- Xiaohongshu / Douyin: 好奇的小逸
+
 ## Generated Results
 
 The examples below show representative output directions. Actual results vary by subject, reference images, and model behavior.
