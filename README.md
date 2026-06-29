@@ -6,11 +6,6 @@
 
 如果这个项目对你有帮助，欢迎在 GitHub 上 Star 支持后续更新。
 
-## 作者与交流
-
-- 微信：loonges
-- 小红书 / 抖音：好奇的小逸
-
 ## 生成效果
 
 以下示例展示不同视觉方向的生成效果。实际结果会随输入主体、参考图和模型状态变化。
@@ -21,15 +16,15 @@
 
 | 东方修仙 / 仙侠 | 维多利亚蒸汽神秘学 |
 |---|---|
-| <img src="assets/examples/cultivation-1.png" width="420" alt="东方修仙示例"> | <img src="assets/examples/victorian-occult-1.png" width="420" alt="维多利亚蒸汽神秘学示例"> |
+| <img src="assets/examples/cultivation-2.png" width="420" alt="东方修仙示例"> | <img src="assets/examples/victorian-occult-1.png" width="420" alt="维多利亚蒸汽神秘学示例"> |
 
 | 彩色怪物收集冒险 | 温暖像素农场 |
 |---|---|
-| <img src="assets/examples/creature-collection-1.png" width="420" alt="彩色怪物收集冒险示例"> | <img src="assets/examples/pixel-farm-1.png" width="420" alt="温暖像素农场示例"> |
+| <img src="assets/examples/creature-collection-2.png" width="420" alt="彩色怪物收集冒险示例"> | <img src="assets/examples/pixel-farm-2.png" width="420" alt="温暖像素农场示例"> |
 
 | 像素海底冒险 | 360 环景预览 |
 |---|---|
-| <img src="assets/examples/pixel-underwater-1.png" width="420" alt="像素海底冒险示例"> | [查看 360 环景动态示例](assets/examples/cultivation-360-panorama.mov) |
+| <img src="assets/examples/pixel-underwater-2.png" width="420" alt="像素海底冒险示例"> | <img src="assets/examples/cultivation-360-panorama.gif" width="420" alt="360 环景动态预览 GIF"> |
 
 ## 核心能力
 
@@ -112,6 +107,8 @@ cp -R multi-style-image-generator ~/.codex/skills/
 
 动态增强预览不是视频。它使用静态 2:1 环景图作为底图，通过 WebGL / Canvas 增加自动巡游、雾气、灵气粒子、光晕和轻微镜头呼吸，让场景看起来更有动态感。
 
+上方 README 中的 360 示例使用 GIF 展示，打开项目首页即可直接观看，不需要二次点击。
+
 ## 辅助脚本
 
 创建静态可交互 360 预览：
@@ -168,3 +165,10 @@ multi-style-image-generator/
 ## 许可
 
 本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。允许个人、学习、研究和非商业用途使用、修改与分发；商业使用、商用集成、商用部署或以营利为目的的再分发，需要提前取得单独书面授权。
+
+## 作者与交流
+
+- 邮箱：247133278@qq.com
+- 微信：loonges
+- QQ：247133278
+- 小红书 / B站：好奇的小逸

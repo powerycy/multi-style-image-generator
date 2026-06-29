@@ -6,11 +6,6 @@ A Codex skill for multi-style image generation. It turns style routing, structur
 
 If this project is useful to you, please consider starring it on GitHub to support future updates.
 
-## Author & Community
-
-- WeChat: loonges
-- Xiaohongshu / Douyin: 好奇的小逸
-
 ## Generated Results
 
 The examples below show representative output directions. Actual results vary by subject, reference images, and model behavior.
@@ -21,15 +16,15 @@ The examples below show representative output directions. Actual results vary by
 
 | Eastern Cultivation / Xianxia | Victorian Steam Occult Mystery |
 |---|---|
-| <img src="assets/examples/cultivation-1.png" width="420" alt="Eastern cultivation example"> | <img src="assets/examples/victorian-occult-1.png" width="420" alt="Victorian occult example"> |
+| <img src="assets/examples/cultivation-2.png" width="420" alt="Eastern cultivation example"> | <img src="assets/examples/victorian-occult-1.png" width="420" alt="Victorian occult example"> |
 
 | Colorful Creature-Collection Adventure | Cozy Pixel Farming |
 |---|---|
-| <img src="assets/examples/creature-collection-1.png" width="420" alt="Creature-collection example"> | <img src="assets/examples/pixel-farm-1.png" width="420" alt="Pixel farming example"> |
+| <img src="assets/examples/creature-collection-2.png" width="420" alt="Creature-collection example"> | <img src="assets/examples/pixel-farm-2.png" width="420" alt="Pixel farming example"> |
 
 | Pixel Underwater Adventure | 360 Panorama Preview |
 |---|---|
-| <img src="assets/examples/pixel-underwater-1.png" width="420" alt="Pixel underwater example"> | [View dynamic 360 panorama example](assets/examples/cultivation-360-panorama.mov) |
+| <img src="assets/examples/pixel-underwater-2.png" width="420" alt="Pixel underwater example"> | <img src="assets/examples/cultivation-360-panorama.gif" width="420" alt="360 panorama animated GIF preview"> |
 
 ## Core Capabilities
 
@@ -112,6 +107,8 @@ Normalization fixes the file ratio only. It cannot turn an ordinary wide image i
 
 The dynamic-enhanced viewer is not a video. It keeps the 2:1 panorama as a static base image and adds real-time WebGL / Canvas effects such as camera drift, mist, spirit particles, glow, and subtle FOV breathing.
 
+The 360 example in this README is shown as a GIF so it can be viewed directly on the project homepage without opening a separate media file.
+
 ## Helper Scripts
 
 Create a static interactive 360 viewer:
@@ -168,3 +165,10 @@ The static and dynamic preview HTML files are standalone when generated with emb
 ## License
 
 This project is released under the [PolyForm Noncommercial License 1.0.0](LICENSE). Personal, educational, research, and other noncommercial uses are permitted. Commercial use, commercial integration, commercial deployment, or redistribution for profit requires separate written permission.
+
+## Author & Community
+
+- Email: 247133278@qq.com
+- WeChat: loonges
+- QQ: 247133278
+- Xiaohongshu / Bilibili: 好奇的小逸
