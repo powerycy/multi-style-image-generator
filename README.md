@@ -4,7 +4,7 @@
 
 面向 Codex 的多风格图片生成 skill。它把常见的视觉风格路由、提示词结构、上传照片参考、游戏 UI 模式和 360 环景预览整理成一套稳定工作流，适合快速生成风格统一、主体清晰、可继续迭代的视觉方案。
 
-如果这个项目对你有帮助，欢迎在 GitHub 上 Star 支持后续更新。
+如果这个项目对你有帮助，欢迎在 GitHub 上 Star ⭐️ 支持后续更新。
 
 ## 生成效果
 
@@ -164,7 +164,7 @@ multi-style-image-generator/
 
 ## 许可
 
-本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。允许个人、学习、研究和非商业用途使用、修改与分发；商业使用、商用集成、商用部署或以营利为目的的再分发，需要提前取得单独书面授权。
+本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。
 
 ## 作者与交流
 
