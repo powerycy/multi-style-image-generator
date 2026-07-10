@@ -4,3 +4,11 @@ __pycache__/
 output/
 *.log
 *.tmp
+.env
+.env.*
+*.key
+*.pem
+*.secret
+*secret*
+*-submit.json
+*-result.json

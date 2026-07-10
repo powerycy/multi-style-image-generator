@@ -2,7 +2,7 @@
 
 [English README](README_en.md)
 
-面向 Codex 的多风格图片生成 skill。它把常见的视觉风格路由、提示词结构、上传照片参考、游戏 UI 模式和 360 环景预览整理成一套稳定工作流，适合快速生成风格统一、主体清晰、可继续迭代的视觉方案。
+面向 Codex 的多风格图片生成 skill。它把常见的视觉风格路由、提示词结构、上传照片参考、游戏 UI 模式、360 环景预览、空间照片预览和动态视频生成整理成一套稳定工作流，适合快速生成风格统一、主体清晰、可继续迭代的视觉方案。
 
 如果这个项目对你有帮助，欢迎在 GitHub 上 Star ⭐️ 支持后续更新。
 
@@ -35,6 +35,8 @@
 - UI 模式控制：支持轻量 UI、全量 UI、无 UI 三种模式。
 - 真实地点风格化：尽量保留真实地点主体可识别度，同时加入目标风格元素。
 - 360 环景工作流：支持 2:1 等距柱状投影提示、比例规格化、静态 HTML 预览和动态增强 HTML 预览。
+- 空间照片预览：支持 `--spatial-mode displacement` 和 `--spatial-mode mesh` 两种模式，用原图和 depth map 生成本地可交互 HTML。
+- 动态视频模式：支持 BigModel/CogVideoX 文生视频和图生视频，使用环境变量读取 API key，不把 key 写进文件。
 
 ## 支持风格
 
@@ -62,6 +64,43 @@ cp -R multi-style-image-generator ~/.codex/skills/
 ```text
 使用 $multi-style-image-generator 生成一张东方修仙风格的宗门山门图。
 ```
+
+## 怎么用
+
+日常使用时，直接在 Codex 里点名这个 skill，并把风格、场景、UI 模式和输出类型写清楚即可：
+
+```text
+使用 $multi-style-image-generator 生成一张原神开放世界游戏实况截图风格的北京故宫，轻量 UI，直接出图。
+```
+
+常用参数和说法：
+
+| 你想要的结果 | 推荐写法 |
+|---|---|
+| 只要提示词 | `只给出 prompt` / `不用出图` |
+| 普通图片 | `直接出图` |
+| 带完整游戏界面 | `全量 UI` |
+| 少量地点提示 | `轻量 UI` |
+| 没有任何文字和界面 | `无 UI` |
+| 360 全景 | `360 度环景照，等距柱状投影，2:1 宽高比` |
+| 空间照片效果 | `生成空间照片预览，使用 --spatial-mode displacement` |
+| 深度网格效果 | `生成空间照片预览，使用 --spatial-mode mesh` |
+| 图生视频 | `把这张图变成 5 秒动态视频` |
+| 360 图生视频 | `先生成 2:1 环景图，再图生视频，并生成 360 视频预览 HTML` |
+
+视频模式需要 BigModel/CogVideoX API key。不要把真实 key 写进 README、脚本或提交记录，运行前只放在当前终端环境里：
+
+```bash
+export BIGMODEL_API_KEY="your-api-key"
+```
+
+或者临时执行单条命令：
+
+```bash
+BIGMODEL_API_KEY="your-api-key" python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "candle flames moving gently" --image path/to/image.png
+```
+
+仓库已经忽略 `.env`、密钥文件、`*-submit.json`、`*-result.json` 和 `output/`，避免把本地 key、任务响应和生成产物误传到 GitHub。
 
 ## 示例请求
 
@@ -95,6 +134,18 @@ cp -R multi-style-image-generator ~/.codex/skills/
 使用 $multi-style-image-generator 生成一张东方修仙风格的 360 度环景照，直接出图，并生成动态增强 360 预览 HTML，有云雾、灵气粒子和自动巡游。
 ```
 
+生成空间照片预览：
+
+```text
+使用 $multi-style-image-generator 根据这张图生成空间照片预览，使用 --spatial-mode displacement。
+```
+
+生成动态视频：
+
+```text
+使用 $multi-style-image-generator 把这张敦煌壁窟图变成 5 秒动态视频，镜头缓慢推进，烛火和尘埃轻微流动。
+```
+
 ## 360 环景说明
 
 对于 360 环景请求，skill 会要求图像生成器输出 2:1 的等距柱状投影图，并在落盘后检查比例。如果模型返回的不是 2:1，辅助脚本会先生成一个 `-2x1.png` 规格化版本，再用它创建 HTML 预览。
@@ -109,6 +160,42 @@ cp -R multi-style-image-generator ~/.codex/skills/
 
 上方 README 中的 360 示例使用 GIF 展示，打开项目首页即可直接观看，不需要二次点击。
 
+## 空间照片预览说明
+
+空间照片预览用于普通图片，不用于 360 环景图。它需要一张原图和一张 depth map；如果没有 depth map，脚本会生成启发式深度图，只适合快速预览。
+
+两种模式用 `--spatial-mode` 区分：
+
+- `displacement`：推荐默认值。用全屏 WebGL shader 根据深度图做空间位移，滑动时更像照片层次在移动，界面里使用“空间位移、空间感、移动幅度”等命名。
+- `mesh`：用深度图生成细分网格，再用相机横移渲染。它的空间感更明显，但对单张图更容易出现边缘拉伸、破面和假 3D 感。
+
+创建空间照片预览：
+
+```bash
+python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --depth path/to/depth.png --spatial-mode displacement
+```
+
+如果没有 depth map：
+
+```bash
+python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --spatial-mode displacement
+```
+
+## 视频模式说明
+
+视频模式使用 BigModel/CogVideoX API。不要把 API key 写入仓库或 README，运行时通过环境变量传入：
+
+```bash
+BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmodel_video.py \
+  --prompt "slow cinematic push-in, candle flames moving, dust drifting" \
+  --image path/to/image.png \
+  --model cogvideox-3 \
+  --quality quality \
+  --size 1920x1080 \
+  --fps 30 \
+  --with-audio
+```
+
 ## 辅助脚本
 
 创建静态可交互 360 预览：
@@ -121,6 +208,18 @@ python3 multi-style-image-generator/scripts/create_panorama_viewer.py path/to/pa
 
 ```bash
 python3 multi-style-image-generator/scripts/create_dynamic_panorama_viewer.py path/to/panorama-2x1.png
+```
+
+创建空间照片预览：
+
+```bash
+python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --spatial-mode displacement
+```
+
+生成 BigModel/CogVideoX 视频：
+
+```bash
+BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "slow cinematic push-in" --image path/to/image.png
 ```
 
 把生成图规格化为 2:1：
@@ -158,7 +257,8 @@ multi-style-image-generator/
 
 - Python 3.9+
 - `normalize_equirectangular_aspect.py` 需要 Pillow
-- 360 HTML 预览需要支持 WebGL 的现代浏览器
+- 空间照片预览脚本需要 Pillow 和 NumPy
+- 360 HTML 预览、动态增强预览和空间照片预览需要支持 WebGL 的现代浏览器
 
 静态和动态预览 HTML 在嵌入图片数据后都是单文件，可以直接打开。
 

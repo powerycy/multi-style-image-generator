@@ -2,7 +2,7 @@
 
 [中文说明](README.md)
 
-A Codex skill for multi-style image generation. It turns style routing, structured prompting, uploaded-photo references, game UI modes, and 360 panorama previews into a repeatable workflow for producing coherent, recognizable, and easy-to-iterate visual concepts.
+A Codex skill for multi-style image generation. It turns style routing, structured prompting, uploaded-photo references, game UI modes, 360 panorama previews, spatial photo previews, and video generation into a repeatable workflow for producing coherent, recognizable, and easy-to-iterate visual concepts.
 
 If this project is useful to you, please consider starring it on GitHub to support future updates.
 
@@ -35,6 +35,8 @@ The examples below show representative output directions. Actual results vary by
 - Lightweight, full, or no UI/HUD modes.
 - Real landmark stylization while keeping the main subject recognizable.
 - 360 panorama workflow: 2:1 equirectangular prompting, ratio normalization, static HTML previews, and dynamic-enhanced HTML previews.
+- Spatial photo preview workflow: use `--spatial-mode displacement` or `--spatial-mode mesh` to generate local interactive HTML from an image and a depth map.
+- BigModel/CogVideoX video workflow: supports text-to-video and image-to-video while reading API keys from environment variables instead of files.
 
 ## Supported Style Directions
 
@@ -62,6 +64,43 @@ Restart Codex after installation, then invoke it with:
 ```text
 使用 $multi-style-image-generator 生成一张东方修仙风格的宗门山门图。
 ```
+
+## How To Use
+
+In everyday use, mention this skill in Codex and describe the style, scene, UI mode, and output type:
+
+```text
+使用 $multi-style-image-generator 生成一张原神开放世界游戏实况截图风格的北京故宫，轻量 UI，直接出图。
+```
+
+Common phrases:
+
+| Desired Result | Recommended Phrase |
+|---|---|
+| Prompt only | `只给出 prompt` / `不用出图` |
+| Normal image | `直接出图` |
+| Full game interface | `全量 UI` |
+| Small location UI | `轻量 UI` |
+| No text or HUD | `无 UI` |
+| 360 panorama | `360 度环景照，等距柱状投影，2:1 宽高比` |
+| Spatial photo effect | `生成空间照片预览，使用 --spatial-mode displacement` |
+| Depth mesh effect | `生成空间照片预览，使用 --spatial-mode mesh` |
+| Image-to-video | `把这张图变成 5 秒动态视频` |
+| 360 image-to-video | `先生成 2:1 环景图，再图生视频，并生成 360 视频预览 HTML` |
+
+Video mode requires a BigModel/CogVideoX API key. Do not write a real key into the README, scripts, or commit history. Keep it in the current shell environment only:
+
+```bash
+export BIGMODEL_API_KEY="your-api-key"
+```
+
+Or pass it for a single command:
+
+```bash
+BIGMODEL_API_KEY="your-api-key" python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "candle flames moving gently" --image path/to/image.png
+```
+
+The repository ignores `.env`, key files, `*-submit.json`, `*-result.json`, and `output/` to reduce the chance of committing local keys, task responses, or generated artifacts.
 
 ## Example Requests
 
@@ -95,6 +134,18 @@ Generate a dynamic-enhanced 360 preview:
 使用 $multi-style-image-generator 生成一张东方修仙风格的 360 度环景照，直接出图，并生成动态增强 360 预览 HTML，有云雾、灵气粒子和自动巡游。
 ```
 
+Generate a spatial photo preview:
+
+```text
+使用 $multi-style-image-generator 根据这张图生成空间照片预览，使用 --spatial-mode displacement。
+```
+
+Generate a video:
+
+```text
+使用 $multi-style-image-generator 把这张敦煌壁窟图变成 5 秒动态视频，镜头缓慢推进，烛火和尘埃轻微流动。
+```
+
 ## 360 Panorama Notes
 
 For 360 panorama requests, the skill asks the image generator for a 2:1 equirectangular image and then verifies the result. If the model returns a non-2:1 image, the helper script creates a `-2x1.png` normalized version before building the HTML preview.
@@ -109,6 +160,42 @@ The dynamic-enhanced viewer is not a video. It keeps the 2:1 panorama as a stati
 
 The 360 example in this README is shown as a GIF so it can be viewed directly on the project homepage without opening a separate media file.
 
+## Spatial Photo Preview Notes
+
+Spatial photo preview is for ordinary images, not 360 panoramas. It uses a source image and a depth map. If no depth map is provided, the helper script creates a heuristic depth map, which is only suitable for quick previews.
+
+Use `--spatial-mode` to choose between two modes:
+
+- `displacement`: recommended default. It uses a full-screen WebGL shader to apply depth-driven spatial displacement, so the motion feels more like layered photo parallax. UI labels prefer terms such as spatial displacement, spatial feel, and motion strength.
+- `mesh`: creates a subdivided mesh from the depth map and renders it with camera movement. It has a stronger 3D feel, but a single image is more likely to show edge stretching, broken surfaces, or fake-3D artifacts.
+
+Create a spatial photo preview:
+
+```bash
+python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --depth path/to/depth.png --spatial-mode displacement
+```
+
+Without a depth map:
+
+```bash
+python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --spatial-mode displacement
+```
+
+## Video Mode Notes
+
+Video mode uses the BigModel/CogVideoX API. Do not write API keys into the repository or README. Pass the key at runtime with an environment variable:
+
+```bash
+BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmodel_video.py \
+  --prompt "slow cinematic push-in, candle flames moving, dust drifting" \
+  --image path/to/image.png \
+  --model cogvideox-3 \
+  --quality quality \
+  --size 1920x1080 \
+  --fps 30 \
+  --with-audio
+```
+
 ## Helper Scripts
 
 Create a static interactive 360 viewer:
@@ -121,6 +208,18 @@ Create a dynamic-enhanced 360 viewer:
 
 ```bash
 python3 multi-style-image-generator/scripts/create_dynamic_panorama_viewer.py path/to/panorama-2x1.png
+```
+
+Create a spatial photo preview:
+
+```bash
+python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --spatial-mode displacement
+```
+
+Generate a BigModel/CogVideoX video:
+
+```bash
+BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "slow cinematic push-in" --image path/to/image.png
 ```
 
 Normalize a generated image to 2:1:
@@ -158,7 +257,8 @@ multi-style-image-generator/
 
 - Python 3.9+
 - Pillow for `normalize_equirectangular_aspect.py`
-- A modern browser with WebGL support for the preview HTML
+- Pillow and NumPy for the spatial photo preview scripts
+- A modern browser with WebGL support for the 360, dynamic-enhanced, and spatial preview HTML
 
 The static and dynamic preview HTML files are standalone when generated with embedded image data.
 
