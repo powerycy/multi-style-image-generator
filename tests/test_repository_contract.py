@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 import tempfile
@@ -73,6 +74,50 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("rm -rf", self.readme_zh)
         self.assertNotIn("rm -rf", self.readme_en)
 
+    def test_feature_introduction_uses_precise_generic_contract(self):
+        skill = self.skill_md.read_text(encoding="utf-8")
+        intro = skill.split("## 功能介绍模式", 1)[1].split("\n## ", 1)[0]
+
+        self.assertIn("360° 全景图", intro)
+        self.assertIn("默认 5 秒", intro)
+        self.assertIn("只支持 5 秒或 10 秒", intro)
+        self.assertNotIn("5-10 秒", skill)
+        self.assertEqual(skill.count("5–10 秒"), 1, "range wording may appear only as a prohibition")
+        self.assertNotIn("黑外套", intro)
+        self.assertNotIn("帽子", intro)
+        self.assertIn("用户指定的服装或道具特征", intro)
+
+    def test_onboarding_eval_locks_terminology_and_video_durations(self):
+        eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
+        payload = json.loads(eval_path.read_text(encoding="utf-8"))
+        onboarding = [item for item in payload["evals"] if item["id"] == 12]
+
+        self.assertEqual(len(payload["evals"]), 12)
+        self.assertEqual(len(onboarding), 1)
+        expected = onboarding[0]["expected_output"]
+        self.assertIn("360° 全景图", expected)
+        self.assertIn("默认 5 秒", expected)
+        self.assertIn("5 秒或 10 秒", expected)
+        self.assertIn("不得虚构具体服装", expected)
+
+    def test_user_facing_panorama_labels_use_standard_term(self):
+        skill = self.skill_md.read_text(encoding="utf-8")
+        agent = (ROOT / "multi-style-image-generator" / "agents" / "openai.yaml").read_text(
+            encoding="utf-8"
+        )
+        frame_viewer = (
+            ROOT
+            / "multi-style-image-generator"
+            / "scripts"
+            / "create_panorama_frame_sequence_viewer.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("360°×180° 等距柱状投影全景图", self.readme_zh)
+        self.assertIn("360° 全景图", skill)
+        self.assertIn("360° 全景预览", agent)
+        self.assertIn("360° 全景动画预览", frame_viewer)
+        self.assertNotIn("## 360 环景说明", self.readme_zh)
+
     def test_ci_workflow_runs_repository_tests(self):
         workflow_path = ROOT / ".github" / "workflows" / "ci.yml"
         self.assertTrue(workflow_path.is_file())
@@ -106,7 +151,7 @@ class RepositoryContractTests(unittest.TestCase):
             "安装": "Installation",
             "怎么用": "How To Use",
             "示例请求": "Example Requests",
-            "360 环景说明": "360 Panorama Notes",
+            "360° 全景图说明": "360° Panorama Notes",
             "空间照片预览说明": "Spatial Photo Preview Notes",
             "视频模式说明": "Video Mode Notes",
             "辅助脚本": "Helper Scripts",

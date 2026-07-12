@@ -220,7 +220,7 @@ Create one workflow triggered by pushes and pull requests. Use `actions/checkout
 ```bash
 python -m compileall -q multi-style-image-generator/scripts
 python -m unittest discover -s tests -v
-python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 11"
+python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 12"
 python multi-style-image-generator/scripts/create_bigmodel_video.py --help
 python multi-style-image-generator/scripts/create_panorama_viewer.py --help
 python multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py --help
@@ -273,7 +273,7 @@ Run:
 ```bash
 python3 -m compileall -q multi-style-image-generator/scripts
 python3 -m unittest discover -s tests -v
-python3 -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 11"
+python3 -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 12"
 python3 multi-style-image-generator/scripts/create_bigmodel_video.py --help >/dev/null
 python3 multi-style-image-generator/scripts/create_panorama_viewer.py --help >/dev/null
 python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py --help >/dev/null

@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests -v
       - name: Validate evaluations
-        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 11"
+        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 12"
       - name: Check video help
         run: python multi-style-image-generator/scripts/create_bigmodel_video.py --help
       - name: Check panorama help

@@ -39,12 +39,12 @@
     {
       "id": 8,
       "prompt": "使用 $multi-style-image-generator 生成一张原神风格的张家界 360 度环景照，不要 UI",
-      "expected_output": "直接调用图像生成工具；使用原神风格；无 HUD、无 UI、无任何可读文字；最终生图 prompt 必须包含“360 度等距柱状投影图像。”；若拿到生成图路径，创建并返回可交互 360 预览 HTML 链接；若内置图像工具没有返回路径，尝试运行 scripts/extract_latest_image_from_session.py 落盘最近的 session 内联图片；若 session 也没有可提取 data URI，说明内置工具没有可落盘数据，保证落盘需改走 CLI/API fallback。"
+      "expected_output": "直接调用图像生成工具；使用原神风格；无 HUD、无 UI、无任何可读文字；最终生图 prompt 必须包含“360°×180° 等距柱状投影全景图。”；若拿到生成图路径，创建并返回可交互 360° 全景预览 HTML 链接；若内置图像工具没有返回路径，尝试运行 scripts/extract_latest_image_from_session.py 落盘最近的 session 内联图片；若 session 也没有可提取 data URI，说明内置工具没有可落盘数据，保证落盘需改走 CLI/API fallback。"
     },
     {
       "id": 9,
       "prompt": "使用 $multi-style-image-generator 生成一张诡秘之主风格的故宫 360 度环景图",
-      "expected_output": "直接调用图像生成工具；使用维多利亚蒸汽神秘学悬疑风格；轻量调查 UI；最终生图 prompt 必须包含“360 度等距柱状投影图像。”；若拿到生成图路径，运行 scripts/create_panorama_viewer.py --embed-image 生成可拖拽环景预览 HTML；若拿不到路径，运行 scripts/extract_latest_image_from_session.py --out-dir output/imagegen --name <slug> 尝试解码最近的 session 内联图片，再生成 HTML；最终回复中提供图片和 HTML 链接；若路径和 session data URI 都不可用，说明内置工具没有可落盘数据，保证落盘需改走 CLI/API fallback。"
+      "expected_output": "直接调用图像生成工具；使用维多利亚蒸汽神秘学悬疑风格；轻量调查 UI；最终生图 prompt 必须包含“360°×180° 等距柱状投影全景图。”；若拿到生成图路径，运行 scripts/create_panorama_viewer.py --embed-image 生成可拖拽 360° 全景预览 HTML；若拿不到路径，运行 scripts/extract_latest_image_from_session.py --out-dir output/imagegen --name <slug> 尝试解码最近的 session 内联图片，再生成 HTML；最终回复中提供图片和 HTML 链接；若路径和 session data URI 都不可用，说明内置工具没有可落盘数据，保证落盘需改走 CLI/API fallback。"
     },
     {
       "id": 10,
@@ -55,6 +55,11 @@
       "id": 11,
       "prompt": "用我上传的自拍生成星露谷物语和潜水员戴夫两种像素风，保留我戴墨镜、米色帽子、黑外套的样子，要认得出是我。",
       "expected_output": "直接调用图像生成工具生成两张像素风图片；必须说明像素风无法保留照片级五官，改用服装色块、帽子、墨镜、姿势、轮廓和笑容符号保持可识别度；prompt 必须要求整张图统一像素网格、同一分辨率边缘和同一色彩风格；禁止高分辨率人脸、照片 cutout、人物与像素背景割裂、可读品牌文字、乱码和水印。"
+    },
+    {
+      "id": 12,
+      "prompt": "使用 $multi-style-image-generator 介绍支持的功能和使用方法，不要出图。",
+      "expected_output": "只介绍功能和通用示例，不调用图像、视频或预览工具；标准名称使用“360° 全景图”，需要时说明“360°×180° 等距柱状投影全景图”；照片风格化只说保留用户指定的服装或道具特征，不得虚构具体服装；视频默认 5 秒，只支持 5 秒或 10 秒，不得给出 8 秒或“5–10 秒”等错误示例；说明只写提示词与直接出图的区别。"
     }
   ]
 }

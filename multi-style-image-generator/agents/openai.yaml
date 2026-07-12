@@ -1,4 +1,4 @@
 interface:
   display_name: "多风格图片生成"
-  short_description: "多风格出图、上传照片风格化、提示词、视频、空间照片和 360 环景预览"
+  short_description: "多风格出图、照片风格化、提示词、视频、空间照片和 360° 全景预览"
   default_prompt: "使用 $multi-style-image-generator 为这个场景生成一张画风统一、主体清晰的指定视觉风格图片。"
