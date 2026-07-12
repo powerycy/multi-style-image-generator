@@ -74,7 +74,7 @@ cd multi-style-image-generator
 python3 scripts/run_with_deps.py create_spatial_preview.py --help
 ```
 
-The first download requires network access. If installation fails because of network or proxy settings, fix the Python/pip proxy or certificate configuration and retry the same launcher command; do not switch to global `pip` or `sudo`. To reset, delete only `multi-style-image-generator/.venv` and `multi-style-image-generator/.deps-state.json`; the next run recreates them.
+The first download requires network access. If installation fails because of network or proxy settings, fix the Python/pip proxy or certificate configuration and retry the same launcher command; do not switch to global `pip` or `sudo`. To reset, run `python3 scripts/run_with_deps.py --reset` from the Skill directory; it deletes only the Skill's own `.venv` and `.deps-state.json`, and the next run recreates them.
 
 ## How To Use
 

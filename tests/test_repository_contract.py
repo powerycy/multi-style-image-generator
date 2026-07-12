@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def tracked_developer_path_matches(root):
     developer_home_prefix = "/" + "Users/"
     completed = subprocess.run(
-        ["git", "grep", "-n", "-I", "-e", developer_home_prefix, "--"],
+        ["git", "grep", "--no-color", "-n", "-I", "-e", developer_home_prefix, "--"],
         cwd=root,
         text=True,
         capture_output=True,
@@ -47,8 +47,10 @@ class RepositoryContractTests(unittest.TestCase):
             subprocess.run(["git", "add", "NOTICE"], cwd=repo, check=True)
 
             matches = tracked_developer_path_matches(repo)
-            self.assertIn(
-                "NOTICE:1:", matches, "extensionless tracked text was not searched"
+            self.assertEqual(
+                matches,
+                f"NOTICE:1:developer path: {developer_home_prefix}reviewer/private-tool\n",
+                "extensionless tracked text output was not deterministic",
             )
 
         with tempfile.TemporaryDirectory() as non_repository:
@@ -63,6 +65,13 @@ class RepositoryContractTests(unittest.TestCase):
     def test_readmes_document_automatic_local_environment(self):
         self.assertIn("multi-style-image-generator/.venv", self.readme_zh)
         self.assertIn("multi-style-image-generator/.venv", self.readme_en)
+
+    def test_readmes_document_launcher_reset_equivalently(self):
+        command = "python3 scripts/run_with_deps.py --reset"
+        self.assertIn(command, self.readme_zh)
+        self.assertIn(command, self.readme_en)
+        self.assertNotIn("rm -rf", self.readme_zh)
+        self.assertNotIn("rm -rf", self.readme_en)
 
     def test_ci_workflow_runs_repository_tests(self):
         workflow_path = ROOT / ".github" / "workflows" / "ci.yml"

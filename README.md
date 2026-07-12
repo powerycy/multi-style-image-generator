@@ -74,7 +74,7 @@ cd multi-style-image-generator
 python3 scripts/run_with_deps.py create_spatial_preview.py --help
 ```
 
-首次下载需要网络。如果安装因网络或代理失败，请检查 Python/pip 的代理和证书配置后重试同一启动器命令；不要改用全局 `pip` 或 `sudo`。如需重置，只删除 `multi-style-image-generator/.venv` 和 `multi-style-image-generator/.deps-state.json`，下一次运行会重新创建。
+首次下载需要网络。如果安装因网络或代理失败，请检查 Python/pip 的代理和证书配置后重试同一启动器命令；不要改用全局 `pip` 或 `sudo`。如需重置，请在 Skill 目录运行 `python3 scripts/run_with_deps.py --reset`；该命令只会删除 Skill 自己的 `.venv` 和 `.deps-state.json`，下一次运行会重新创建。
 
 ## 怎么用
 

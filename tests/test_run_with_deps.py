@@ -175,6 +175,97 @@ class RunWithDepsTests(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(runner.commands[0][0], [str(venv_python), str(target), *target_args])
 
+    def test_main_target_failure_preserves_exit_code_without_setup_recovery(self):
+        venv_python = self.skill_dir / ".venv" / "bin" / "python"
+        stderr = io.StringIO()
+        runner = RecordingRunner(fail_on=lambda _command: True)
+
+        with mock.patch.object(
+            launcher, "ensure_environment", return_value=venv_python
+        ), mock.patch.object(launcher.subprocess, "run", runner), mock.patch.object(
+            launcher.sys, "stderr", stderr
+        ):
+            result = launcher.main(["create_spatial_preview.py"])
+
+        self.assertEqual(result, 7)
+        self.assertIn("Target script failed with exit code 7", stderr.getvalue())
+        self.assertNotIn("Environment:", stderr.getvalue())
+        self.assertNotIn("Recovery command:", stderr.getvalue())
+        self.assertNotIn("Dependency launcher failed", stderr.getvalue())
+
+    def test_main_target_oserror_reports_only_execution_failure(self):
+        venv_python = self.skill_dir / ".venv" / "bin" / "python"
+        stderr = io.StringIO()
+        runner = RecordingRunner(
+            fail_on=lambda _command: True,
+            error_factory=lambda _command: OSError("permission denied"),
+        )
+
+        with mock.patch.object(
+            launcher, "ensure_environment", return_value=venv_python
+        ), mock.patch.object(launcher.subprocess, "run", runner), mock.patch.object(
+            launcher.sys, "stderr", stderr
+        ):
+            result = launcher.main(["create_spatial_preview.py"])
+
+        self.assertEqual(result, 1)
+        self.assertEqual(
+            stderr.getvalue(), "Target script could not execute: permission denied\n"
+        )
+
+    def test_reset_deletes_only_launcher_owned_environment_and_is_idempotent(self):
+        venv_dir = self.skill_dir / ".venv"
+        venv_dir.mkdir()
+        (venv_dir / "installed-package").write_text("data", encoding="utf-8")
+        state_path = self.skill_dir / ".deps-state.json"
+        state_path.write_text("{}\n", encoding="utf-8")
+        preserved_file = self.skill_dir / "keep.txt"
+        preserved_file.write_text("keep", encoding="utf-8")
+        preserved_dir = self.skill_dir / "output"
+        preserved_dir.mkdir()
+        (preserved_dir / "result.txt").write_text("keep", encoding="utf-8")
+        stdout = io.StringIO()
+
+        with mock.patch.object(
+            launcher, "__file__", str(self.scripts_dir / "run_with_deps.py")
+        ), mock.patch.object(launcher.sys, "stdout", stdout):
+            first = launcher.main(["--reset"])
+            second = launcher.main(["--reset"])
+
+        self.assertEqual((first, second), (0, 0))
+        self.assertFalse(venv_dir.exists())
+        self.assertFalse(state_path.exists())
+        self.assertEqual(preserved_file.read_text(encoding="utf-8"), "keep")
+        self.assertEqual(
+            (preserved_dir / "result.txt").read_text(encoding="utf-8"), "keep"
+        )
+        self.assertEqual(stdout.getvalue().count("Reset complete:"), 2)
+
+    def test_setup_failure_recommends_cross_platform_launcher_reset(self):
+        launcher_path = self.scripts_dir / "launcher with spaces.py"
+        interpreter = str(self.skill_dir / "Python Dir" / "python")
+
+        for platform in ("linux", "win32"):
+            with self.subTest(platform=platform):
+                stderr = io.StringIO()
+                with mock.patch.object(
+                    launcher, "__file__", str(launcher_path)
+                ), mock.patch.object(
+                    launcher.sys, "executable", interpreter
+                ), mock.patch.object(
+                    launcher.sys, "platform", platform
+                ), mock.patch.object(
+                    launcher, "ensure_environment", side_effect=OSError("setup failed")
+                ), mock.patch.object(launcher.sys, "stderr", stderr):
+                    result = launcher.main(["create_spatial_preview.py"])
+
+                self.assertEqual(result, 1)
+                output = stderr.getvalue()
+                self.assertIn("--reset", output)
+                self.assertIn(interpreter, output)
+                self.assertIn(str(launcher_path), output)
+                self.assertNotIn("rm -rf", output)
+
 
 if __name__ == "__main__":
     unittest.main()

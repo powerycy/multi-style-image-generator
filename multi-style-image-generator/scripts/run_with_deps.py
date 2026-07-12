@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 import sys
 from typing import Optional, Sequence
@@ -116,23 +117,56 @@ def _setup_phase(error: BaseException) -> str:
     return "environment setup"
 
 
-def _report_failure(phase: str, error: BaseException, skill_dir: Path) -> None:
+def reset_environment(skill_dir: Path) -> None:
+    """Delete only the environment artifacts owned by this launcher."""
+    shutil.rmtree(skill_dir / ".venv", ignore_errors=True)
+    try:
+        (skill_dir / ".deps-state.json").unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _format_command(command: Sequence[str]) -> str:
+    if sys.platform == "win32":
+        return subprocess.list2cmdline(command)
+    return shlex.join(command)
+
+
+def _report_setup_failure(phase: str, error: BaseException, skill_dir: Path) -> None:
     venv_dir = skill_dir / ".venv"
-    state_path = skill_dir / ".deps-state.json"
-    recovery = shlex.join(["rm", "-rf", str(venv_dir), str(state_path)])
+    recovery = _format_command(
+        [sys.executable, str(Path(__file__).resolve()), "--reset"]
+    )
     print(f"Dependency launcher failed during {phase}: {error}", file=sys.stderr)
     print(f"Environment: {venv_dir}", file=sys.stderr)
     print(f"Recovery command: {recovery}", file=sys.stderr)
 
 
+def _report_target_failure(error: BaseException) -> None:
+    if isinstance(error, subprocess.CalledProcessError):
+        print(
+            f"Target script failed with exit code {error.returncode}: {error}",
+            file=sys.stderr,
+        )
+    else:
+        print(f"Target script could not execute: {error}", file=sys.stderr)
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
-        print(f"Usage: {Path(__file__).name} TARGET [ARG ...]", file=sys.stderr)
+        print(
+            f"Usage: {Path(__file__).name} TARGET [ARG ...] | --reset",
+            file=sys.stderr,
+        )
         return 2
 
     scripts_dir = Path(__file__).resolve().parent
     skill_dir = scripts_dir.parent
+    if args == ["--reset"]:
+        reset_environment(skill_dir)
+        print(f"Reset complete: removed launcher environment state from {skill_dir}")
+        return 0
     try:
         target = resolve_target(args[0], scripts_dir)
     except ValueError as error:
@@ -142,7 +176,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         venv_python = ensure_environment(skill_dir)
     except (subprocess.CalledProcessError, OSError) as error:
-        _report_failure(_setup_phase(error), error, skill_dir)
+        _report_setup_failure(_setup_phase(error), error, skill_dir)
         return error.returncode if isinstance(error, subprocess.CalledProcessError) else 1
 
     try:
@@ -150,7 +184,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             [str(venv_python), str(target), *args[1:]], check=True
         )
     except (subprocess.CalledProcessError, OSError) as error:
-        _report_failure("target execution", error, skill_dir)
+        _report_target_failure(error)
         return error.returncode if isinstance(error, subprocess.CalledProcessError) else 1
     return completed.returncode
 
