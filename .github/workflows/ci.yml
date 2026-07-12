@@ -16,6 +16,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+      - name: Verify executable script modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad_modes="$(
+            git ls-files -s 'multi-style-image-generator/scripts/*.py' |
+              awk '$1 != "100755"'
+          )"
+          if [[ -n "$bad_modes" ]]; then
+            echo "Python scripts must use executable Git mode 100755:" >&2
+            printf '%s\n' "$bad_modes" >&2
+            exit 1
+          fi
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}

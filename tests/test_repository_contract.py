@@ -59,6 +59,16 @@ class RepositoryContractTests(unittest.TestCase):
             workflow_path.read_text(encoding="utf-8"),
         )
 
+    def test_ci_workflow_verifies_executable_script_modes(self):
+        workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "git ls-files -s 'multi-style-image-generator/scripts/*.py'", workflow
+        )
+        self.assertIn('$1 != "100755"', workflow)
+        self.assertIn("exit 1", workflow)
+
     def test_python_scripts_have_python_shebangs(self):
         scripts_dir = ROOT / "multi-style-image-generator" / "scripts"
         for path in sorted(scripts_dir.glob("*.py")):
