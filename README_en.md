@@ -26,6 +26,15 @@ The examples below show representative output directions. Actual results vary by
 |---|---|
 | <img src="assets/examples/pixel-underwater-2.png" width="420" alt="Pixel underwater example"> | <img src="assets/examples/cultivation-360-panorama.gif" width="420" alt="360° panorama animated GIF preview"> |
 
+### Interactive Demos
+
+| Demo | What It Shows | Open |
+|---|---|---|
+| Spatial depth image | Spatial parallax driven by an image and depth map, with depth, motion, and perspective controls | [Open the spatial photo preview](assets/examples/spatial-depth-preview.html) |
+| Dynamic 360° panorama video preview | An extracted-frame 360° panorama animation with drag, wheel zoom, pause, and playback controls | [Open the dynamic 360° panorama video preview](assets/examples/dynamic-360-panorama-preview.html) |
+
+Both demos embed their assets in a single HTML file and do not depend on local image or video paths. If GitHub shows the HTML source, download the file and open it in a modern WebGL-capable browser.
+
 ## Core Capabilities
 
 - Direct image generation from Chinese user requests.

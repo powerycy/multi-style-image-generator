@@ -74,6 +74,32 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("rm -rf", self.readme_zh)
         self.assertNotIn("rm -rf", self.readme_en)
 
+    def test_interactive_showcase_demos_are_self_contained(self):
+        spatial_demo = ROOT / "assets" / "examples" / "spatial-depth-preview.html"
+        panorama_demo = (
+            ROOT / "assets" / "examples" / "dynamic-360-panorama-preview.html"
+        )
+
+        self.assertTrue(spatial_demo.is_file())
+        self.assertTrue(panorama_demo.is_file())
+
+        spatial_html = spatial_demo.read_text(encoding="utf-8")
+        panorama_html = panorama_demo.read_text(encoding="utf-8")
+        self.assertGreaterEqual(spatial_html.count("data:image/"), 2)
+        self.assertGreaterEqual(panorama_html.count("data:image/"), 2)
+        self.assertIn("空间照片预览", spatial_html)
+        self.assertIn("360° 全景动画预览", panorama_html)
+
+    def test_readmes_link_both_interactive_showcase_demos(self):
+        demo_links = (
+            "assets/examples/spatial-depth-preview.html",
+            "assets/examples/dynamic-360-panorama-preview.html",
+        )
+        for link in demo_links:
+            with self.subTest(link=link):
+                self.assertIn(link, self.readme_zh)
+                self.assertIn(link, self.readme_en)
+
     def test_feature_introduction_uses_precise_generic_contract(self):
         skill = self.skill_md.read_text(encoding="utf-8")
         intro = skill.split("## 功能介绍模式", 1)[1].split("\n## ", 1)[0]
