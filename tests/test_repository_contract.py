@@ -51,6 +51,21 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("multi-style-image-generator/.venv", self.readme_zh)
         self.assertIn("multi-style-image-generator/.venv", self.readme_en)
 
+    def test_ci_workflow_runs_repository_tests(self):
+        workflow_path = ROOT / ".github" / "workflows" / "ci.yml"
+        self.assertTrue(workflow_path.is_file())
+        self.assertIn(
+            "python -m unittest discover -s tests -v",
+            workflow_path.read_text(encoding="utf-8"),
+        )
+
+    def test_python_scripts_have_python_shebangs(self):
+        scripts_dir = ROOT / "multi-style-image-generator" / "scripts"
+        for path in sorted(scripts_dir.glob("*.py")):
+            with self.subTest(path=path.relative_to(ROOT)):
+                first_line = path.read_text(encoding="utf-8").splitlines()[0]
+                self.assertEqual(first_line, "#!/usr/bin/env python3")
+
     def test_readme_level_two_headings_are_structurally_equivalent(self):
         heading_map = {
             "生成效果": "Generated Results",

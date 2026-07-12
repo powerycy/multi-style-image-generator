@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: multi-style-image-generator/requirements.txt
+      - name: Compile scripts
+        run: python -m compileall -q multi-style-image-generator/scripts
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+      - name: Validate evaluations
+        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 11"
+      - name: Check video help
+        run: python multi-style-image-generator/scripts/create_bigmodel_video.py --help
+      - name: Check panorama help
+        run: python multi-style-image-generator/scripts/create_panorama_viewer.py --help
+      - name: Check dependency launcher help
+        run: python multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py --help
