@@ -1,5 +1,6 @@
 import json
 import re
+import struct
 import subprocess
 import tempfile
 from pathlib import Path
@@ -7,6 +8,57 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def gif_frame_delays_ms(payload):
+    """Return frame delays while walking GIF blocks without image libraries."""
+    if payload[:6] not in (b"GIF87a", b"GIF89a"):
+        raise ValueError("not a GIF")
+    position = 13
+    packed = payload[10]
+    if packed & 0x80:
+        position += 3 * (2 ** ((packed & 0x07) + 1))
+    delays = []
+    while position < len(payload):
+        marker = payload[position]
+        position += 1
+        if marker == 0x3B:
+            break
+        if marker == 0x21:
+            label = payload[position]
+            position += 1
+            if label == 0xF9:
+                block_size = payload[position]
+                if block_size != 4:
+                    raise ValueError("invalid graphic control extension")
+                delays.append(
+                    int.from_bytes(payload[position + 2 : position + 4], "little")
+                    * 10
+                )
+                position += block_size + 2
+                continue
+            while True:
+                block_size = payload[position]
+                position += 1
+                if block_size == 0:
+                    break
+                position += block_size
+            continue
+        if marker == 0x2C:
+            descriptor_packed = payload[position + 8]
+            position += 9
+            if descriptor_packed & 0x80:
+                position += 3 * (2 ** ((descriptor_packed & 0x07) + 1))
+            position += 1  # LZW minimum code size
+            while True:
+                block_size = payload[position]
+                position += 1
+                if block_size == 0:
+                    break
+                position += block_size
+            continue
+        raise ValueError(f"unexpected GIF block marker: {marker:#x}")
+    return delays
 
 
 def tracked_developer_path_matches(root):
@@ -74,31 +126,38 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("rm -rf", self.readme_zh)
         self.assertNotIn("rm -rf", self.readme_en)
 
-    def test_interactive_showcase_demos_are_self_contained(self):
-        spatial_demo = ROOT / "assets" / "examples" / "spatial-depth-preview.html"
-        panorama_demo = (
-            ROOT / "assets" / "examples" / "dynamic-360-panorama-preview.html"
+    def test_readme_showcase_gifs_are_directly_embedded(self):
+        gif_paths = (
+            "assets/examples/spatial-depth-preview.gif",
+            "assets/examples/dynamic-360-panorama-preview.gif",
         )
+        for path in gif_paths:
+            with self.subTest(path=path):
+                self.assertIn(f'<img src="{path}"', self.readme_zh)
+                self.assertIn(f'<img src="{path}"', self.readme_en)
+        readmes = self.readme_zh + self.readme_en
+        self.assertNotIn("spatial-depth-preview.html", readmes)
+        self.assertNotIn("dynamic-360-panorama-preview.html", readmes)
 
-        self.assertTrue(spatial_demo.is_file())
-        self.assertTrue(panorama_demo.is_file())
-
-        spatial_html = spatial_demo.read_text(encoding="utf-8")
-        panorama_html = panorama_demo.read_text(encoding="utf-8")
-        self.assertGreaterEqual(spatial_html.count("data:image/"), 2)
-        self.assertGreaterEqual(panorama_html.count("data:image/"), 2)
-        self.assertIn("空间照片预览", spatial_html)
-        self.assertIn("360° 全景动画预览", panorama_html)
-
-    def test_readmes_link_both_interactive_showcase_demos(self):
-        demo_links = (
-            "assets/examples/spatial-depth-preview.html",
-            "assets/examples/dynamic-360-panorama-preview.html",
-        )
-        for link in demo_links:
-            with self.subTest(link=link):
-                self.assertIn(link, self.readme_zh)
-                self.assertIn(link, self.readme_en)
+    def test_showcase_gifs_are_animated_and_bounded(self):
+        examples = ROOT / "assets" / "examples"
+        for name in (
+            "spatial-depth-preview.gif",
+            "dynamic-360-panorama-preview.gif",
+        ):
+            with self.subTest(name=name):
+                path = examples / name
+                self.assertTrue(path.is_file())
+                self.assertLessEqual(path.stat().st_size, 5 * 1024 * 1024)
+                payload = path.read_bytes()
+                self.assertIn(payload[:6], (b"GIF87a", b"GIF89a"))
+                self.assertEqual(struct.unpack("<HH", payload[6:10]), (520, 292))
+                delays = gif_frame_delays_ms(payload)
+                self.assertGreaterEqual(len(delays), 20)
+                duration_ms = sum(delays)
+                self.assertGreaterEqual(duration_ms, 3000)
+                self.assertLessEqual(duration_ms, 4000)
+                self.assertIn(b"NETSCAPE2.0", payload)
 
     def test_feature_introduction_uses_precise_generic_contract(self):
         skill = self.skill_md.read_text(encoding="utf-8")

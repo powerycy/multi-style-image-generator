@@ -26,14 +26,9 @@
 |---|---|
 | <img src="assets/examples/pixel-underwater-2.png" width="420" alt="像素海底冒险示例"> | <img src="assets/examples/cultivation-360-panorama.gif" width="420" alt="360° 全景动态预览 GIF"> |
 
-### 可交互 Demo
-
-| Demo | 能看到什么 | 打开 |
-|---|---|---|
-| 空间景深图 | 原图与深度图驱动的空间视差，可调空间感、移动幅度和透视 | [打开空间照片预览](assets/examples/spatial-depth-preview.html) |
-| 动态 360° 全景视频预览 | 视频抽帧后的 360° 全景动画，可拖拽观察、滚轮缩放、暂停或播放 | [打开动态 360° 全景视频预览](assets/examples/dynamic-360-panorama-preview.html) |
-
-两个 Demo 都把资源内嵌在单个 HTML 文件中，不依赖本机图片或视频路径。GitHub 如果显示的是 HTML 源码，请下载对应文件后用支持 WebGL 的现代浏览器打开。
+| 空间景深预览 | 动态 360° 全景视频预览 |
+|---|---|
+| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深动态预览 GIF"> | <img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="动态 360° 全景视频预览 GIF"> |
 
 ## 核心能力
 
