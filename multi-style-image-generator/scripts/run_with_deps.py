@@ -119,11 +119,24 @@ def _setup_phase(error: BaseException) -> str:
 
 def reset_environment(skill_dir: Path) -> None:
     """Delete only the environment artifacts owned by this launcher."""
-    shutil.rmtree(skill_dir / ".venv", ignore_errors=True)
+    venv_path = skill_dir / ".venv"
     try:
-        (skill_dir / ".deps-state.json").unlink()
+        if venv_path.is_symlink() or not venv_path.is_dir():
+            venv_path.unlink()
+        else:
+            shutil.rmtree(venv_path)
     except FileNotFoundError:
         pass
+    except OSError as error:
+        raise OSError(f"{venv_path}: {error}") from error
+
+    state_path = skill_dir / ".deps-state.json"
+    try:
+        state_path.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as error:
+        raise OSError(f"{state_path}: {error}") from error
 
 
 def _format_command(command: Sequence[str]) -> str:
@@ -164,7 +177,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     scripts_dir = Path(__file__).resolve().parent
     skill_dir = scripts_dir.parent
     if args == ["--reset"]:
-        reset_environment(skill_dir)
+        try:
+            reset_environment(skill_dir)
+        except OSError as error:
+            print(f"Reset failed: {error}", file=sys.stderr)
+            return 1
         print(f"Reset complete: removed launcher environment state from {skill_dir}")
         return 0
     try:

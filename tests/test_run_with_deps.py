@@ -241,6 +241,70 @@ class RunWithDepsTests(unittest.TestCase):
         )
         self.assertEqual(stdout.getvalue().count("Reset complete:"), 2)
 
+    def test_reset_unlinks_venv_symlink_without_touching_external_target(self):
+        external_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(external_temp.cleanup)
+        external_dir = Path(external_temp.name)
+        external_marker = external_dir / "keep.txt"
+        external_marker.write_text("keep", encoding="utf-8")
+        venv_path = self.skill_dir / ".venv"
+        venv_path.symlink_to(external_dir, target_is_directory=True)
+
+        launcher.reset_environment(self.skill_dir)
+
+        self.assertFalse(venv_path.exists())
+        self.assertFalse(venv_path.is_symlink())
+        self.assertEqual(external_marker.read_text(encoding="utf-8"), "keep")
+
+    def test_reset_unlinks_non_directory_venv_file(self):
+        venv_path = self.skill_dir / ".venv"
+        venv_path.write_text("not a directory", encoding="utf-8")
+
+        launcher.reset_environment(self.skill_dir)
+
+        self.assertFalse(venv_path.exists())
+
+    def test_reset_unlinks_state_symlink_without_touching_external_target(self):
+        external_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(external_temp.cleanup)
+        external_state = Path(external_temp.name) / "external-state.json"
+        external_state.write_text('{"keep": true}\n', encoding="utf-8")
+        state_path = self.skill_dir / ".deps-state.json"
+        state_path.symlink_to(external_state)
+
+        launcher.reset_environment(self.skill_dir)
+
+        self.assertFalse(state_path.exists())
+        self.assertFalse(state_path.is_symlink())
+        self.assertEqual(
+            external_state.read_text(encoding="utf-8"), '{"keep": true}\n'
+        )
+
+    def test_main_reset_reports_directory_deletion_failure_without_success(self):
+        venv_dir = self.skill_dir / ".venv"
+        venv_dir.mkdir()
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        with mock.patch.object(
+            launcher, "__file__", str(self.scripts_dir / "run_with_deps.py")
+        ), mock.patch.object(
+            launcher.shutil,
+            "rmtree",
+            side_effect=OSError("directory is busy"),
+        ), mock.patch.object(launcher.sys, "stdout", stdout), mock.patch.object(
+            launcher.sys, "stderr", stderr
+        ):
+            try:
+                result = launcher.main(["--reset"])
+            except OSError as error:
+                self.fail(f"reset deletion error escaped main: {error}")
+
+        self.assertEqual(result, 1)
+        self.assertIn(str(venv_dir), stderr.getvalue())
+        self.assertIn("directory is busy", stderr.getvalue())
+        self.assertNotIn("Reset complete", stdout.getvalue())
+
     def test_setup_failure_recommends_cross_platform_launcher_reset(self):
         launcher_path = self.scripts_dir / "launcher with spaces.py"
         interpreter = str(self.skill_dir / "Python Dir" / "python")
