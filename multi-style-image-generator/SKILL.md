@@ -11,6 +11,8 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 
 写提示词或调用图像生成工具前，先读 `references/game-visual-styles.md`，拿风格选择、视觉规范、UI 规则、真实地点转译和禁用项。
 
+需要 Pillow 或 NumPy 的脚本必须通过 `scripts/run_with_deps.py` 调用。首次运行允许启动器在 Skill 目录创建 `.venv` 并自动安装 `requirements.txt`；不要改用全局 `pip`、`sudo` 或系统包管理器。如果安装失败，原样报告错误和失败阶段，不要静默绕过启动器。
+
 ## 工作流
 
 先判断用户要的风格：
@@ -29,7 +31,7 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 - **直接出图**：用户说“生成图、出图、产出一个图、做一张、画一张、直接生成”等，先内部组装最终生图 prompt，然后调用可用的图像生成工具。不要只返回提示词。
 - **动态视频模式**：用户说“生成视频、动态效果、视频模式、动起来、做成视频、CogVideoX”等，先按目标风格组装视频 prompt，再运行 `scripts/create_bigmodel_video.py` 调用 BigModel 视频生成 API。这个模式只生成视频，不改动原来的图片、360 HTML 或动态增强 360 HTML 流程。
 - **360 图生视频模式**：用户说“360 环景视频、360 图生视频、环景图动起来”等，先生成 2:1 等距柱状环景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后运行 `scripts/create_panorama_video_viewer.py <video.mp4>` 生成 360 视频预览 HTML。该 HTML 会等待首帧加载、保留点击播放兜底，并强制循环播放；不要只把普通 16:9 视频塞进 360 预览。
-- **空间照片预览模式**：用户说“空间照片、空间感、空间位移、视差预览、depth map、深度图、类似苹果空间照片”等，使用 `scripts/create_spatial_preview.py` 生成本地 HTML。该模式用于已有普通图片，不替代普通出图、360 环景预览或动态增强 360 预览。
+- **空间照片预览模式**：用户说“空间照片、空间感、空间位移、视差预览、depth map、深度图、类似苹果空间照片”等，使用 `scripts/run_with_deps.py create_spatial_preview.py` 生成本地 HTML。该模式用于已有普通图片，不替代普通出图、360 环景预览或动态增强 360 预览。
 - **只写提示词**：用户明确说“写提示词、不用出图、prompt、给我提示词”等，只返回最终提示词代码块。
 - **不明确**：用户说“做一个/来一个/生成一个”默认直接出图；用户说“写一份/给我一段”默认只写提示词。
 
@@ -57,7 +59,7 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 
 - **直接展示 360 效果**：360 度环景照模式 + 直接出图时，出图后尽量生成一个可交互 360 预览 HTML。若图像生成工具返回本地图片路径，直接使用该路径；若没有路径，运行 `scripts/extract_latest_image_from_session.py --out-dir output/imagegen --name <slug>`，尝试从当前 Codex session 解码图片落盘。该脚本会同时查找两类图片载荷：`data:image/...;base64,...` 形式的 data URI，以及 Codex image generation 事件中 `payload.result` 里的裸 PNG/JPEG/WebP/GIF base64。拿到图片文件后，先做 2:1 比例检查和规格化，再运行 `scripts/create_panorama_viewer.py <image-path> --embed-image` 用全屏 WebGL 方向采样方式预览等距柱状图，最终回复里给出 2:1 图片和本地 HTML 链接；在 Codex 桌面环境可用浏览器工具时，也可以直接打开该 HTML。
 - **动态增强 360 效果**：如果用户要求“动态、动起来、动态环景、灵气粒子、云雾流动、自动巡游”等，但没有明确要求真正的视频，优先保持 2:1 静态环景图不变，运行 `scripts/create_dynamic_panorama_viewer.py <2:1-image-path>` 生成动态增强版 HTML。该 HTML 用静态等距柱状图作为底图，并叠加自动巡游、轻微 FOV 呼吸、云雾层、灵气粒子和光晕；最终说明它不是视频，建筑和主体不会真实变形，只是实时特效增强。
-- **比例检查和 2:1 规格化**：360 度等距柱状图应接近 2:1。落盘后用 `file` 或图片库确认尺寸；如果内置图像工具返回 16:9、1:1 等非 2:1 图片，必须先运行 `scripts/normalize_equirectangular_aspect.py <image-path>` 生成 `<stem>-2x1.png`，再把这个 2:1 文件作为最终返回图片和 HTML 输入。规格化只能保证文件比例正确，不能把普通广角图变成几何上真实的 360 环景；如有明显非全景内容，最终回复要简短说明“已规格化为 2:1，但源图可能仍非严格无缝环景”。
+- **比例检查和 2:1 规格化**：360 度等距柱状图应接近 2:1。落盘后用 `file` 或图片库确认尺寸；如果内置图像工具返回 16:9、1:1 等非 2:1 图片，必须先运行 `scripts/run_with_deps.py normalize_equirectangular_aspect.py <image-path>` 生成 `<stem>-2x1.png`，再把这个 2:1 文件作为最终返回图片和 HTML 输入。规格化只能保证文件比例正确，不能把普通广角图变成几何上真实的 360 环景；如有明显非全景内容，最终回复要简短说明“已规格化为 2:1，但源图可能仍非严格无缝环景”。
 - **提取排查**：如果脚本没有找到图片，但对话里确实刚生成了图，先在当前 session JSONL 中查真实图片头而不是只查 data URI：PNG 常见前缀是 `iVBORw0KGgo`，JPEG 常见前缀是 `/9j/`，WebP 常见前缀是 `UklGR`，GIF 常见前缀是 `R0lGOD`。若命中 `payload.result` 这类裸 base64 字段，可直接 base64 解码为图片；不要把文档里的 `data:image/...;base64,...` 占位文本当作真实图片。
 - **降级**：不要把“对话里能看到图片”等同于“session 里一定有可提取图片载荷”。如果既没有本地图片路径，也无法从 session 日志提取图片，就不要假装已创建交互预览。直接说明内置图像工具只展示了静态图，当前没有可落盘数据；如果用户要求保证落盘和 360 HTML，必须改走 CLI/API fallback，并按 `imagegen` 技能规则先确认该 fallback。
 
@@ -68,7 +70,7 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 空间照片预览使用已有图片和深度图生成本地 HTML。统一入口是：
 
 ```bash
-python3 /Users/yuanchaoyi/.codex/skills/multi-style-image-generator/scripts/create_spatial_preview.py \
+python3 scripts/run_with_deps.py create_spatial_preview.py \
   <image-path> \
   --depth <optional-depth-map.png> \
   --spatial-mode displacement \
@@ -93,7 +95,7 @@ python3 /Users/yuanchaoyi/.codex/skills/multi-style-image-generator/scripts/crea
 使用 BigModel/CogVideoX 生成动态效果时走独立脚本：
 
 ```bash
-BIGMODEL_API_KEY="$KEY" python3 /Users/yuanchaoyi/.codex/skills/multi-style-image-generator/scripts/create_bigmodel_video.py \
+BIGMODEL_API_KEY="$KEY" python3 scripts/create_bigmodel_video.py \
   --prompt "<video prompt>" \
   --image "<optional-local-image.png>" \
   --model cogvideox-3 \
@@ -112,7 +114,7 @@ BIGMODEL_API_KEY="$KEY" python3 /Users/yuanchaoyi/.codex/skills/multi-style-imag
 - 视频 prompt 应描述镜头运动、主体运动、环境动态和节奏，例如“slow cinematic push-in, cloth and dust moving, magical particles drifting”。避免写静态构图词过多。
 - 如果用户要求“动态效果”但没有要求视频文件，可以默认生成 5-10 秒横版视频；参数默认 `model=cogvideox-3`、`quality=quality`、`size=1920x1080`、`fps=30`、`with_audio=true`。
 - 脚本会提交任务、轮询异步结果并下载视频；最终回复给出本地视频文件链接和任务 JSON 链接。
-- 如果用户要求“360 环景视频、360 图生视频、环景图动起来”，从源头保持两步走：先生成 2:1 等距柱状环景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后生成 360 视频预览 HTML。`file://` 本地打开时优先用 `scripts/create_panorama_frame_sequence_viewer.py`：先用 ffmpeg 从视频抽帧，再把帧内嵌进 HTML 循环播放，避免浏览器把本地 `<video>` 上传到 WebGL 纹理时出现黑屏。只有在确定通过 HTTP 服务访问时，才使用 `scripts/create_panorama_video_viewer.py <video.mp4>` 的原始视频纹理方案。不要只把普通 16:9 视频塞进 360 预览。
+- 如果用户要求“360 环景视频、360 图生视频、环景图动起来”，从源头保持两步走：先生成 2:1 等距柱状环景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后生成 360 视频预览 HTML。`file://` 本地打开时优先用 `scripts/create_panorama_frame_sequence_viewer.py`：先运行 `command -v ffmpeg` 检测 ffmpeg，再从视频抽帧并把帧内嵌进 HTML 循环播放，避免浏览器把本地 `<video>` 上传到 WebGL 纹理时出现黑屏。如果检测不到 ffmpeg，说明它是可选的系统依赖并给出由用户自行安装的提示（macOS 可举例 `brew install ffmpeg`）；不要自动运行系统安装、`sudo` 或包管理器。只有在确定通过 HTTP 服务访问时，才使用 `scripts/create_panorama_video_viewer.py <video.mp4>` 的原始视频纹理方案。不要只把普通 16:9 视频塞进 360 预览。
 
 ## 提示词模板
 

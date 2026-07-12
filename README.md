@@ -65,6 +65,17 @@ cp -R multi-style-image-generator ~/.codex/skills/
 使用 $multi-style-image-generator 生成一张东方修仙风格的宗门山门图。
 ```
 
+纯提示词、BigModel/CogVideoX 视频、图片提取以及 360 HTML 查看器脚本只使用 Python 标准库，不需要额外安装 Python 包。空间照片预览和 2:1 图片规格化需要 Pillow / NumPy；首次通过启动器运行时，会在 `multi-style-image-generator/.venv` 自动创建隔离环境，并从 `requirements.txt` 下载依赖。后续运行会复用这个环境。
+
+如果希望提前准备依赖，请先进入 Skill 目录，再手动运行：
+
+```bash
+cd multi-style-image-generator
+python3 scripts/run_with_deps.py create_spatial_preview.py --help
+```
+
+首次下载需要网络。如果安装因网络或代理失败，请检查 Python/pip 的代理和证书配置后重试同一启动器命令；不要改用全局 `pip` 或 `sudo`。如需重置，只删除 `multi-style-image-generator/.venv` 和 `multi-style-image-generator/.deps-state.json`，下一次运行会重新创建。
+
 ## 怎么用
 
 日常使用时，直接在 Codex 里点名这个 skill，并把风格、场景、UI 模式和输出类型写清楚即可：
@@ -172,13 +183,13 @@ BIGMODEL_API_KEY="your-api-key" python3 multi-style-image-generator/scripts/crea
 创建空间照片预览：
 
 ```bash
-python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --depth path/to/depth.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --depth path/to/depth.png --spatial-mode displacement
 ```
 
 如果没有 depth map：
 
 ```bash
-python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode displacement
 ```
 
 ## 视频模式说明
@@ -213,7 +224,7 @@ python3 multi-style-image-generator/scripts/create_dynamic_panorama_viewer.py pa
 创建空间照片预览：
 
 ```bash
-python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode displacement
 ```
 
 生成 BigModel/CogVideoX 视频：
@@ -225,7 +236,7 @@ BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmo
 把生成图规格化为 2:1：
 
 ```bash
-python3 multi-style-image-generator/scripts/normalize_equirectangular_aspect.py path/to/image.png
+python3 multi-style-image-generator/scripts/run_with_deps.py normalize_equirectangular_aspect.py path/to/image.png
 ```
 
 从 Codex session 日志中提取最近生成的图片：
@@ -256,11 +267,14 @@ multi-style-image-generator/
 ## 依赖
 
 - Python 3.9+
-- `normalize_equirectangular_aspect.py` 需要 Pillow
-- 空间照片预览脚本需要 Pillow 和 NumPy
+- 提示词、BigModel/CogVideoX 视频、图片提取和 360 HTML 查看器脚本只需要 Python 标准库
+- `normalize_equirectangular_aspect.py` 和空间照片预览脚本的 Pillow / NumPy 依赖由启动器自动安装到 `multi-style-image-generator/.venv`
 - 360 HTML 预览、动态增强预览和空间照片预览需要支持 WebGL 的现代浏览器
+- 视频抽帧预览可选用系统 `ffmpeg`；先用 `command -v ffmpeg` 检测，缺失时请自行安装（macOS 可使用 `brew install ffmpeg`），Skill 不会自动安装系统软件
 
 静态和动态预览 HTML 在嵌入图片数据后都是单文件，可以直接打开。
+
+BigModel/CogVideoX API key 始终只通过环境变量提供，与 Python 包安装无关；启动器不会读取、创建或保存 API key。
 
 ## 许可
 

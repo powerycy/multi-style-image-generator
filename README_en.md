@@ -65,6 +65,17 @@ Restart Codex after installation, then invoke it with:
 使用 $multi-style-image-generator 生成一张东方修仙风格的宗门山门图。
 ```
 
+Prompt-only work, BigModel/CogVideoX video, image extraction, and the 360 HTML viewer scripts use only the Python standard library and need no extra Python packages. Spatial photo previews and 2:1 normalization need Pillow / NumPy; on the first launcher run, an isolated environment is created automatically at `multi-style-image-generator/.venv` and dependencies are downloaded from `requirements.txt`. Later runs reuse that environment.
+
+To prepare the dependencies manually, first enter the Skill directory and run:
+
+```bash
+cd multi-style-image-generator
+python3 scripts/run_with_deps.py create_spatial_preview.py --help
+```
+
+The first download requires network access. If installation fails because of network or proxy settings, fix the Python/pip proxy or certificate configuration and retry the same launcher command; do not switch to global `pip` or `sudo`. To reset, delete only `multi-style-image-generator/.venv` and `multi-style-image-generator/.deps-state.json`; the next run recreates them.
+
 ## How To Use
 
 In everyday use, mention this skill in Codex and describe the style, scene, UI mode, and output type:
@@ -172,13 +183,13 @@ Use `--spatial-mode` to choose between two modes:
 Create a spatial photo preview:
 
 ```bash
-python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --depth path/to/depth.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --depth path/to/depth.png --spatial-mode displacement
 ```
 
 Without a depth map:
 
 ```bash
-python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode displacement
 ```
 
 ## Video Mode Notes
@@ -213,7 +224,7 @@ python3 multi-style-image-generator/scripts/create_dynamic_panorama_viewer.py pa
 Create a spatial photo preview:
 
 ```bash
-python3 multi-style-image-generator/scripts/create_spatial_preview.py path/to/image.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode displacement
 ```
 
 Generate a BigModel/CogVideoX video:
@@ -225,7 +236,7 @@ BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmo
 Normalize a generated image to 2:1:
 
 ```bash
-python3 multi-style-image-generator/scripts/normalize_equirectangular_aspect.py path/to/image.png
+python3 multi-style-image-generator/scripts/run_with_deps.py normalize_equirectangular_aspect.py path/to/image.png
 ```
 
 Extract the latest generated image from a Codex session log:
@@ -256,11 +267,14 @@ multi-style-image-generator/
 ## Requirements
 
 - Python 3.9+
-- Pillow for `normalize_equirectangular_aspect.py`
-- Pillow and NumPy for the spatial photo preview scripts
+- Prompting, BigModel/CogVideoX video, image extraction, and the 360 HTML viewer scripts require only the Python standard library
+- The launcher automatically installs Pillow / NumPy for `normalize_equirectangular_aspect.py` and the spatial photo preview scripts into `multi-style-image-generator/.venv`
 - A modern browser with WebGL support for the 360, dynamic-enhanced, and spatial preview HTML
+- Frame-sequence previews can optionally use the system `ffmpeg`; detect it with `command -v ffmpeg` and install it yourself if missing (for example, `brew install ffmpeg` on macOS), because the Skill never installs system software automatically
 
 The static and dynamic preview HTML files are standalone when generated with embedded image data.
+
+BigModel/CogVideoX API keys always remain environment-only and are unrelated to Python package installation; the launcher does not read, create, or save API keys.
 
 ## License
 
