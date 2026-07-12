@@ -1,4 +1,5 @@
 import importlib.util
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -15,14 +16,17 @@ SPEC.loader.exec_module(launcher)
 
 
 class RecordingRunner:
-    def __init__(self, fail_on=None):
+    def __init__(self, fail_on=None, error_factory=None):
         self.commands = []
         self.fail_on = fail_on
+        self.error_factory = error_factory
 
     def __call__(self, command, **kwargs):
         command = list(command)
         self.commands.append((command, kwargs))
         if self.fail_on and self.fail_on(command):
+            if self.error_factory:
+                raise self.error_factory(command)
             raise subprocess.CalledProcessError(7, command)
         return subprocess.CompletedProcess(command, 0)
 
@@ -128,6 +132,34 @@ class RunWithDepsTests(unittest.TestCase):
 
         self.assertEqual(caught.exception.returncode, 7)
         self.assertFalse((self.skill_dir / ".deps-state.json").exists())
+
+    def assert_main_reports_setup_oserror_phase(self, fail_on, expected_phase):
+        runner = RecordingRunner(
+            fail_on=fail_on, error_factory=lambda command: OSError("command unavailable")
+        )
+        ensure_environment = launcher.ensure_environment
+
+        def ensure_in_temp_dir(_skill_dir):
+            return ensure_environment(self.skill_dir, runner=runner)
+
+        stderr = io.StringIO()
+        with mock.patch.object(
+            launcher, "ensure_environment", side_effect=ensure_in_temp_dir
+        ), mock.patch.object(launcher.sys, "stderr", stderr):
+            result = launcher.main(["create_spatial_preview.py"])
+
+        self.assertEqual(result, 1)
+        self.assertIn(f"failed during {expected_phase}", stderr.getvalue())
+
+    def test_main_identifies_oserror_during_venv_creation(self):
+        self.assert_main_reports_setup_oserror_phase(
+            lambda command: "venv" in command, "virtual environment creation"
+        )
+
+    def test_main_identifies_oserror_during_dependency_installation(self):
+        self.assert_main_reports_setup_oserror_phase(
+            lambda command: "pip" in command, "dependency installation"
+        )
 
     def test_main_preserves_target_arguments(self):
         target_args = ["input image.png", "--output", "result path.html"]

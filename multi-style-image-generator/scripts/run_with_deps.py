@@ -20,6 +20,12 @@ ALLOWED_TARGETS = {
 }
 
 
+class _SetupOSError(OSError):
+    def __init__(self, phase: str, error: OSError):
+        super().__init__(str(error))
+        self.phase = phase
+
+
 def resolve_target(name: str, scripts_dir: Path) -> Path:
     """Resolve an allowlisted script name without accepting arbitrary paths."""
     if name not in ALLOWED_TARGETS or Path(name).name != name:
@@ -71,19 +77,26 @@ def ensure_environment(skill_dir: Path, runner=subprocess.run) -> Path:
     if environment_is_current(venv_dir, digest, runner=runner):
         return venv_python
 
-    runner([sys.executable, "-m", "venv", str(venv_dir)], check=True)
-    runner(
-        [
-            str(venv_python),
-            "-m",
-            "pip",
-            "install",
-            "--disable-pip-version-check",
-            "-r",
-            str(requirements_path),
-        ],
-        check=True,
-    )
+    try:
+        runner([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+    except OSError as error:
+        raise _SetupOSError("virtual environment creation", error) from error
+
+    try:
+        runner(
+            [
+                str(venv_python),
+                "-m",
+                "pip",
+                "install",
+                "--disable-pip-version-check",
+                "-r",
+                str(requirements_path),
+            ],
+            check=True,
+        )
+    except OSError as error:
+        raise _SetupOSError("dependency installation", error) from error
     (skill_dir / ".deps-state.json").write_text(
         json.dumps({"requirements_digest": digest}) + "\n", encoding="utf-8"
     )
@@ -91,6 +104,9 @@ def ensure_environment(skill_dir: Path, runner=subprocess.run) -> Path:
 
 
 def _setup_phase(error: BaseException) -> str:
+    phase = getattr(error, "phase", None)
+    if isinstance(phase, str):
+        return phase
     command = getattr(error, "cmd", ())
     if isinstance(command, (list, tuple)):
         if "venv" in command:
