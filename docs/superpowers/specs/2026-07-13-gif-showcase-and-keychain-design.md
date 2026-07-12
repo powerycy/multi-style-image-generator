@@ -65,7 +65,7 @@ The Skill instructions will tell users they can say:
 
 - Use the system `osascript` executable for the hidden-input dialog.
 - Use the system `security` executable to read, update, and delete the generic-password item.
-- When saving, invoke `security add-generic-password ... -w` without putting the password after `-w`, and provide the captured value through the child process standard input. This keeps the key out of the process argument list.
+- When saving, invoke `security -i` and provide an `add-generic-password ... -X <hex>` command only through the child process standard input. This keeps the key and its encoded form out of the process argument list; captured output is never echoed.
 - Capture subprocess output internally and never echo credential-bearing output.
 - Treat user cancellation as a normal, clearly explained stop rather than an application crash.
 

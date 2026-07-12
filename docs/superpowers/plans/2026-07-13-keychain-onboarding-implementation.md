@@ -47,7 +47,7 @@ Expected: FAIL because the credential helper functions do not exist.
 
 - [ ] **Step 3: Implement constants and Keychain helpers**
 
-Add `KEYCHAIN_SERVICE`, `KEYCHAIN_ACCOUNT`, and helpers using argument-list subprocess calls. `keychain_write` must invoke `security add-generic-password -U -a api-key -s multi-style-image-generator.bigmodel -w` and send the key via `input=api_key + "\n"`; the key must not occur in the command list.
+Add `KEYCHAIN_SERVICE`, `KEYCHAIN_ACCOUNT`, and helpers using argument-list subprocess calls. `keychain_write` must invoke `security -i` and send an `add-generic-password -U -a api-key -s multi-style-image-generator.bigmodel -X <hex>` command only through subprocess input; neither the key nor its encoded form may occur in the process argument list or captured output.
 
 - [ ] **Step 4: Implement the secure dialog and resolution order**
 

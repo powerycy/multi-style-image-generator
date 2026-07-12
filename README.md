@@ -40,7 +40,7 @@
 - 真实地点风格化：尽量保留真实地点主体可识别度，同时加入目标风格元素。
 - 360° 全景图工作流：支持 360°×180° 等距柱状投影提示、2:1 比例规格化、静态 HTML 预览和动态增强 HTML 预览。
 - 空间照片预览：支持 `--spatial-mode displacement` 和 `--spatial-mode mesh` 两种模式，用原图和 depth map 生成本地可交互 HTML。
-- 动态视频模式：支持 BigModel/CogVideoX 文生视频和图生视频，使用环境变量读取 API key，不把 key 写进文件。
+- 动态视频模式：支持 BigModel/CogVideoX 文生视频和图生视频；macOS 首次安全输入后保存到钥匙串，后续自动读取，不把 key 写进文件或对话。
 
 ## 支持风格
 
@@ -103,19 +103,20 @@ python3 scripts/run_with_deps.py create_spatial_preview.py --help
 | 图生视频 | `把这张图变成 5 秒动态视频` |
 | 360° 全景图生视频 | `先生成 2:1 全景图，再图生视频，并生成 360° 全景视频预览 HTML` |
 
-视频模式需要 BigModel/CogVideoX API key。不要把真实 key 写进 README、脚本或提交记录，运行前只放在当前终端环境里：
+视频模式需要 BigModel/CogVideoX API key。macOS 首次生成视频时会弹出隐藏输入的系统对话框，确认后安全保存到钥匙串；后续自动读取，不需要再次输入。不要把真实 key 粘贴到 Codex 对话、README、脚本或提交记录中。
 
 ```bash
-export BIGMODEL_API_KEY="your-api-key"
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "candle flames moving gently" --image path/to/image.png
 ```
 
-或者临时执行单条命令：
+更换或删除已保存的 SK：
 
 ```bash
-BIGMODEL_API_KEY="your-api-key" python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "candle flames moving gently" --image path/to/image.png
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py --replace-api-key
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py --forget-api-key
 ```
 
-仓库已经忽略 `.env`、密钥文件、`*-submit.json`、`*-result.json` 和 `output/`，避免把本地 key、任务响应和生成产物误传到 GitHub。
+如需临时切换账号，仍可使用 `BIGMODEL_API_KEY` 或 `ZHIPU_API_KEY` 环境变量覆盖钥匙串值。仓库已经忽略 `.env`、密钥文件、`*-submit.json`、`*-result.json` 和 `output/`，避免把本地 key、任务响应和生成产物误传到 GitHub。
 
 ## 示例请求
 
@@ -200,10 +201,10 @@ python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_prev
 
 ## 视频模式说明
 
-视频模式使用 BigModel/CogVideoX API。根据[智谱视频生成接口](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90%E5%BC%82%E6%AD%A5)，视频默认 5 秒，`duration` 只支持 5 秒或 10 秒，不支持 8 秒等中间时长。不要把 API key 写入仓库或 README，运行时通过环境变量传入：
+视频模式使用 BigModel/CogVideoX API。根据[智谱视频生成接口](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90%E5%BC%82%E6%AD%A5)，视频默认 5 秒，`duration` 只支持 5 秒或 10 秒，不支持 8 秒等中间时长。macOS 会通过钥匙串安全管理 API key：
 
 ```bash
-BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmodel_video.py \
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py \
   --prompt "slow cinematic push-in, candle flames moving, dust drifting" \
   --image path/to/image.png \
   --model cogvideox-3 \
@@ -236,7 +237,7 @@ python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_prev
 生成 BigModel/CogVideoX 视频：
 
 ```bash
-BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "slow cinematic push-in" --image path/to/image.png
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "slow cinematic push-in" --image path/to/image.png
 ```
 
 把生成图规格化为 2:1：
@@ -280,7 +281,7 @@ multi-style-image-generator/
 
 静态和动态预览 HTML 在嵌入图片数据后都是单文件，可以直接打开。
 
-BigModel/CogVideoX API key 始终只通过环境变量提供，与 Python 包安装无关；启动器不会读取、创建或保存 API key。
+BigModel/CogVideoX API key 与 Python 包安装无关。macOS 默认通过系统对话框和钥匙串安全保存、自动读取；环境变量仍可临时覆盖。Skill 不会把 key 写入仓库、生成文件或对话。
 
 ## 许可
 

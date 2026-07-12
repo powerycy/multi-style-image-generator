@@ -173,7 +173,7 @@ In matching sections, document:
 - manual preparation using `python3 scripts/run_with_deps.py create_spatial_preview.py --help`;
 - reset/removal by deleting only `multi-style-image-generator/.venv` and `.deps-state.json`;
 - network/proxy recovery and optional `ffmpeg` installation guidance;
-- API keys remain environment-only and are unrelated to Python package installation.
+- API keys remain outside dependency-bootstrap state and are unrelated to Python package installation; the later macOS Keychain design defines credential storage behavior.
 
 - [ ] **Step 6: Run contract and unit tests and verify GREEN**
 

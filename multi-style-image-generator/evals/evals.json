@@ -60,6 +60,11 @@
       "id": 12,
       "prompt": "使用 $multi-style-image-generator 介绍支持的功能和使用方法，不要出图。",
       "expected_output": "只介绍功能和通用示例，不调用图像、视频或预览工具；标准名称使用“360° 全景图”，需要时说明“360°×180° 等距柱状投影全景图”；照片风格化只说保留用户指定的服装或道具特征，不得虚构具体服装；视频默认 5 秒，只支持 5 秒或 10 秒，不得给出 8 秒或“5–10 秒”等错误示例；说明只写提示词与直接出图的区别。"
+    },
+    {
+      "id": 13,
+      "prompt": "使用 $multi-style-image-generator 生成一个 5 秒视频，我还没有配置过 SK。",
+      "expected_output": "先说明视频生成需要 BigModel/CogVideoX API Key；macOS 缺少环境变量和钥匙串凭据时，由脚本弹出隐藏输入的系统对话框并保存到 macOS 钥匙串，后续自动读取；不得要求用户把 SK 粘贴到对话中，不得在命令参数、README、日志或输出文件中回显或保存 SK；允许 BIGMODEL_API_KEY 或 ZHIPU_API_KEY 环境变量作为临时优先覆盖。"
     }
   ]
 }

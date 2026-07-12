@@ -104,7 +104,7 @@ python3 scripts/run_with_deps.py create_spatial_preview.py \
 使用 BigModel/CogVideoX 生成动态效果时走独立脚本：
 
 ```bash
-BIGMODEL_API_KEY="$KEY" python3 scripts/create_bigmodel_video.py \
+python3 scripts/create_bigmodel_video.py \
   --prompt "<video prompt>" \
   --image "<optional-local-image.png>" \
   --model cogvideox-3 \
@@ -117,8 +117,9 @@ BIGMODEL_API_KEY="$KEY" python3 scripts/create_bigmodel_video.py \
 
 规则：
 
-- 不要把 API Key 写入 skill 文件、脚本、README 或输出产物。优先使用环境变量 `BIGMODEL_API_KEY`，也兼容 `ZHIPU_API_KEY`。
-- 用户在对话里临时提供 key 时，只能在当前命令环境中使用；不要落盘保存。
+- 不要把 API Key 写入 skill 文件、脚本、README、对话或输出产物，也不要要求用户在对话中粘贴 API Key。
+- macOS 首次生成视频且没有环境变量时，脚本会弹出隐藏输入的系统对话框，并把 API Key 保存到 macOS 钥匙串；后续自动读取，不再重复询问。环境变量 `BIGMODEL_API_KEY` 或 `ZHIPU_API_KEY` 仍可作为临时覆盖，且优先于钥匙串。
+- 用户说“更换视频生成 SK”时，运行 `python3 scripts/create_bigmodel_video.py --replace-api-key`；用户说“删除已保存的视频生成 SK”时，运行 `python3 scripts/create_bigmodel_video.py --forget-api-key`。不要在命令参数中传入 SK。
 - 用户给本地图片并要求“把这个变成视频/让这张图动起来”时，传 `--image <local-path>`。脚本会把 PNG/JPEG 转为 `image_url` 的 data URL；图片必须不超过 5MB。
 - 视频 prompt 应描述镜头运动、主体运动、环境动态和节奏，例如“slow cinematic push-in, cloth and dust moving, magical particles drifting”。避免写静态构图词过多。
 - 如果用户要求“动态效果”但没有指定时长，默认生成 5 秒横版视频；仅当用户明确要求时使用 10 秒。`duration` 只支持 `5` 或 `10`；参数默认 `model=cogvideox-3`、`quality=quality`、`size=1920x1080`、`fps=30`、`with_audio=true`。

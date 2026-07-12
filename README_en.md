@@ -40,7 +40,7 @@ The examples below show representative output directions. Actual results vary by
 - Real landmark stylization while keeping the main subject recognizable.
 - 360° panorama workflow: 360°×180° equirectangular prompting, 2:1 ratio normalization, static HTML previews, and dynamic-enhanced HTML previews.
 - Spatial photo preview workflow: use `--spatial-mode displacement` or `--spatial-mode mesh` to generate local interactive HTML from an image and a depth map.
-- BigModel/CogVideoX video workflow: supports text-to-video and image-to-video while reading API keys from environment variables instead of files.
+- BigModel/CogVideoX video workflow: supports text-to-video and image-to-video; on macOS the first secure entry is saved to Keychain and automatically reused without writing the key to files or chat.
 
 ## Supported Style Directions
 
@@ -103,19 +103,20 @@ Common phrases:
 | Image-to-video | `把这张图变成 5 秒动态视频` |
 | 360° panorama image-to-video | `先生成 2:1 全景图，再图生视频，并生成 360° 全景视频预览 HTML` |
 
-Video mode requires a BigModel/CogVideoX API key. Do not write a real key into the README, scripts, or commit history. Keep it in the current shell environment only:
+Video mode requires a BigModel/CogVideoX API key. On the first video generation on macOS, a native hidden-input dialog appears and saves the key securely in Keychain. Later requests automatically reuse it. Never paste a real key into Codex chat, the README, scripts, or commit history.
 
 ```bash
-export BIGMODEL_API_KEY="your-api-key"
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "candle flames moving gently" --image path/to/image.png
 ```
 
-Or pass it for a single command:
+Replace or forget the saved key:
 
 ```bash
-BIGMODEL_API_KEY="your-api-key" python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "candle flames moving gently" --image path/to/image.png
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py --replace-api-key
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py --forget-api-key
 ```
 
-The repository ignores `.env`, key files, `*-submit.json`, `*-result.json`, and `output/` to reduce the chance of committing local keys, task responses, or generated artifacts.
+`BIGMODEL_API_KEY` or `ZHIPU_API_KEY` can still temporarily override the saved Keychain value. The repository ignores `.env`, key files, `*-submit.json`, `*-result.json`, and `output/` to reduce the chance of committing local keys, task responses, or generated artifacts.
 
 ## Example Requests
 
@@ -200,10 +201,10 @@ python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_prev
 
 ## Video Mode Notes
 
-Video mode uses the BigModel/CogVideoX API. According to the [BigModel video generation API](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90%E5%BC%82%E6%AD%A5), video duration defaults to 5 seconds and supports only 5 or 10 seconds; intermediate values such as 8 seconds are not supported. Do not write API keys into the repository or README. Pass the key at runtime with an environment variable:
+Video mode uses the BigModel/CogVideoX API. According to the [BigModel video generation API](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90%E5%BC%82%E6%AD%A5), video duration defaults to 5 seconds and supports only 5 or 10 seconds; intermediate values such as 8 seconds are not supported. On macOS, the API key is handled securely through Keychain:
 
 ```bash
-BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmodel_video.py \
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py \
   --prompt "slow cinematic push-in, candle flames moving, dust drifting" \
   --image path/to/image.png \
   --model cogvideox-3 \
@@ -236,7 +237,7 @@ python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_prev
 Generate a BigModel/CogVideoX video:
 
 ```bash
-BIGMODEL_API_KEY="$KEY" python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "slow cinematic push-in" --image path/to/image.png
+python3 multi-style-image-generator/scripts/create_bigmodel_video.py --prompt "slow cinematic push-in" --image path/to/image.png
 ```
 
 Normalize a generated image to 2:1:
@@ -280,7 +281,7 @@ multi-style-image-generator/
 
 The static and dynamic preview HTML files are standalone when generated with embedded image data.
 
-BigModel/CogVideoX API keys always remain environment-only and are unrelated to Python package installation; the launcher does not read, create, or save API keys.
+BigModel/CogVideoX API keys are unrelated to Python package installation. On macOS, the default flow uses a native dialog and Keychain for secure storage and automatic reuse; environment variables remain available as temporary overrides. The Skill never writes the key to the repository, generated files, or chat.
 
 ## License
 

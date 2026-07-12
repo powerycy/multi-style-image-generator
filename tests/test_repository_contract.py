@@ -177,13 +177,37 @@ class RepositoryContractTests(unittest.TestCase):
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         onboarding = [item for item in payload["evals"] if item["id"] == 12]
 
-        self.assertEqual(len(payload["evals"]), 12)
+        self.assertEqual(len(payload["evals"]), 13)
         self.assertEqual(len(onboarding), 1)
         expected = onboarding[0]["expected_output"]
         self.assertIn("360° 全景图", expected)
         self.assertIn("默认 5 秒", expected)
         self.assertIn("5 秒或 10 秒", expected)
         self.assertIn("不得虚构具体服装", expected)
+
+    def test_video_key_onboarding_uses_macos_keychain_without_chat_secrets(self):
+        skill = self.skill_md.read_text(encoding="utf-8")
+        self.assertIn("macOS 钥匙串", skill)
+        self.assertIn("--replace-api-key", skill)
+        self.assertIn("--forget-api-key", skill)
+        self.assertIn("不要要求用户在对话中粘贴", skill)
+
+        self.assertIn("首次生成视频", self.readme_zh)
+        self.assertIn("后续自动读取", self.readme_zh)
+        self.assertIn("first video generation", self.readme_en)
+        self.assertIn("automatically reuse", self.readme_en)
+
+        eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
+        payload = json.loads(eval_path.read_text(encoding="utf-8"))
+        key_onboarding = [item for item in payload["evals"] if item["id"] == 13]
+        self.assertEqual(len(payload["evals"]), 13)
+        self.assertEqual(len(key_onboarding), 1)
+        self.assertIn("不得要求用户把 SK 粘贴到对话中", key_onboarding[0]["expected_output"])
+
+        workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("assert len(data['evals']) == 13", workflow)
 
     def test_user_facing_panorama_labels_use_standard_term(self):
         skill = self.skill_md.read_text(encoding="utf-8")
