@@ -48,7 +48,7 @@ The launcher will never write API keys, proxy credentials, or pip output contain
 
 Only known scripts inside the bundled `scripts` directory may be launched. Absolute paths, parent traversal, arbitrary Python modules, and shell commands are rejected. Subprocesses will receive argument arrays without `shell=True`.
 
-All project commands will derive paths from `__file__` or documented placeholders. The existing `/Users/yuanchaoyi/...` paths will be removed.
+All project commands will derive paths from `__file__` or documented placeholders. Existing developer-specific absolute home paths will be removed.
 
 ## Testing strategy
 

@@ -21,10 +21,6 @@ class RepositoryContractTests(unittest.TestCase):
                 "git",
                 "ls-files",
                 "-z",
-                "--",
-                "README.md",
-                "README_en.md",
-                "multi-style-image-generator",
             ],
             cwd=ROOT,
             check=True,
@@ -37,10 +33,13 @@ class RepositoryContractTests(unittest.TestCase):
             if name and ((ROOT / name).suffix in text_suffixes or name == ".gitignore")
         ]
 
-    def test_tracked_docs_have_no_developer_absolute_paths(self):
+    def test_tracked_text_has_no_developer_absolute_paths(self):
+        developer_home_prefix = "/" + "Users/"
         for path in self.tracked_text_files:
             with self.subTest(path=path.relative_to(ROOT)):
-                self.assertNotIn("/Users/yuanchaoyi/", path.read_text(encoding="utf-8"))
+                self.assertNotIn(
+                    developer_home_prefix, path.read_text(encoding="utf-8")
+                )
 
     def test_skill_routes_dependency_scripts_through_launcher(self):
         skill = self.skill_md.read_text(encoding="utf-8")

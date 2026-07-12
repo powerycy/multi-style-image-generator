@@ -127,8 +127,9 @@ Create tests asserting:
 
 ```python
 def test_tracked_docs_have_no_developer_absolute_paths(self):
+    developer_home_prefix = "/" + "Users/"
     for path in self.tracked_text_files:
-        self.assertNotIn("/Users/yuanchaoyi/", path.read_text(encoding="utf-8"))
+        self.assertNotIn(developer_home_prefix, path.read_text(encoding="utf-8"))
 
 def test_skill_routes_dependency_scripts_through_launcher(self):
     skill = self.skill_md.read_text(encoding="utf-8")
@@ -260,7 +261,7 @@ git commit -m "ci: validate skill scripts and documentation"
 Run:
 
 ```bash
-python3 /Users/zhengshuwen/.codex/skills/.system/skill-creator/scripts/quick_validate.py multi-style-image-generator
+python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" multi-style-image-generator
 ```
 
 Expected: validation succeeds. If it fails, add a failing repository test for the discovered regression when practical, then make the minimal correction.
@@ -284,7 +285,7 @@ Expected: all commands exit `0`; no untracked generated environment or state fil
 
 - [ ] **Step 3: Confirm acceptance criteria explicitly**
 
-Verify `git grep '/Users/'` finds no developer path in tracked project text, the second launcher invocation does not run pip, all scripts have mode `100755`, and both README heading structures match.
+Verify `git grep "$(printf '/%s/' Users)"` finds no developer path in tracked project text, the second launcher invocation does not run pip, all scripts have mode `100755`, and both README heading structures match.
 
 - [ ] **Step 4: Commit any validation-only corrections**
 
