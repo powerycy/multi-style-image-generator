@@ -1,10 +1,26 @@
 import re
 import subprocess
+import tempfile
 from pathlib import Path
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def tracked_developer_path_matches(root):
+    developer_home_prefix = "/" + "Users/"
+    completed = subprocess.run(
+        ["git", "grep", "-n", "-I", "-e", developer_home_prefix, "--"],
+        cwd=root,
+        text=True,
+        capture_output=True,
+    )
+    if completed.returncode == 1:
+        return ""
+    if completed.returncode != 0:
+        completed.check_returncode()
+    return completed.stdout
 
 
 class RepositoryContractTests(unittest.TestCase):
@@ -16,30 +32,28 @@ class RepositoryContractTests(unittest.TestCase):
         cls.readme_zh = cls.readme_zh_path.read_text(encoding="utf-8")
         cls.readme_en = cls.readme_en_path.read_text(encoding="utf-8")
 
-        tracked = subprocess.run(
-            [
-                "git",
-                "ls-files",
-                "-z",
-            ],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-        ).stdout.decode("utf-8").split("\0")
-        text_suffixes = {".md", ".py", ".json", ".yaml", ".yml", ".txt"}
-        cls.tracked_text_files = [
-            ROOT / name
-            for name in tracked
-            if name and ((ROOT / name).suffix in text_suffixes or name == ".gitignore")
-        ]
-
     def test_tracked_text_has_no_developer_absolute_paths(self):
-        developer_home_prefix = "/" + "Users/"
-        for path in self.tracked_text_files:
-            with self.subTest(path=path.relative_to(ROOT)):
-                self.assertNotIn(
-                    developer_home_prefix, path.read_text(encoding="utf-8")
-                )
+        matches = tracked_developer_path_matches(ROOT)
+        self.assertEqual(matches, "", f"tracked developer paths found:\n{matches}")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            developer_home_prefix = "/" + "Users/"
+            (repo / "NOTICE").write_text(
+                f"developer path: {developer_home_prefix}reviewer/private-tool\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "NOTICE"], cwd=repo, check=True)
+
+            matches = tracked_developer_path_matches(repo)
+            self.assertIn(
+                "NOTICE:1:", matches, "extensionless tracked text was not searched"
+            )
+
+        with tempfile.TemporaryDirectory() as non_repository:
+            with self.assertRaises(subprocess.CalledProcessError):
+                tracked_developer_path_matches(Path(non_repository))
 
     def test_skill_routes_dependency_scripts_through_launcher(self):
         skill = self.skill_md.read_text(encoding="utf-8")
