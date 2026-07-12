@@ -13,3 +13,5 @@ output/
 *secret*
 *-submit.json
 *-result.json
+multi-style-image-generator/.venv/
+multi-style-image-generator/.deps-state.json
