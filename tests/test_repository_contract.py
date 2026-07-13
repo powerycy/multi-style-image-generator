@@ -243,7 +243,7 @@ class RepositoryContractTests(unittest.TestCase):
             photo_rules,
         )
 
-    def test_portrait_panorama_qa_blocks_final_export_until_all_checks_pass(self):
+    def test_portrait_panorama_qa_uses_tiered_token_aware_delivery(self):
         qa_path = (
             ROOT
             / "multi-style-image-generator"
@@ -262,8 +262,11 @@ class RepositoryContractTests(unittest.TestCase):
             "顶部和底部极点",
             "左右拼接缝",
             "多个朝向",
-            "任一关键项失败",
-            "不导出最终 PNG 或 HTML",
+            "通过 / 可用但需说明 / 不通过",
+            "正常观看尺寸",
+            "不要为了检查而过度放大",
+            "自动重绘最多一次",
+            "第二次重绘",
             "只是已规格化为 2:1",
             "不得声称“已保留本人脸”",
         )
@@ -287,7 +290,8 @@ class RepositoryContractTests(unittest.TestCase):
             "直接出图时，", 1
         )[0]
         self.assertIn("质检候选", panorama_flow)
-        self.assertIn("质检通过后", panorama_flow)
+        self.assertIn("可用但需说明", panorama_flow)
+        self.assertIn("自动重绘最多一次", panorama_flow)
         self.assertIn("create_panorama_viewer.py", panorama_flow)
 
     def test_portrait_panorama_eval_and_existing_modes_are_preserved(self):
@@ -300,7 +304,8 @@ class RepositoryContractTests(unittest.TestCase):
         expected = portrait_panorama[0]["expected_output"]
         self.assertIn("默认重设计世界观服装和叙事动作", expected)
         self.assertIn("身份和眼神质检", expected)
-        self.assertIn("质检通过后才创建", expected)
+        self.assertIn("可用但需说明", expected)
+        self.assertIn("自动重绘最多一次", expected)
 
         skill = self.skill_md.read_text(encoding="utf-8")
         preserved_routes = (
