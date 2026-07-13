@@ -257,8 +257,8 @@ class RepositoryContractTests(unittest.TestCase):
             "身份相似度高于场景细节、特效和服装精致度",
             "双眼视线同向",
             "斗鸡眼",
-            "4–6 米",
-            "10–15%",
+            "8–12 米",
+            "6–10%",
             "顶部和底部极点",
             "左右拼接缝",
             "多个朝向",
@@ -272,6 +272,17 @@ class RepositoryContractTests(unittest.TestCase):
                 self.assertIn(rule, qa)
 
         skill = self.skill_md.read_text(encoding="utf-8")
+        portrait_contract = skill + qa + json.dumps(
+            [item for item in json.loads(
+                (ROOT / "multi-style-image-generator" / "evals" / "evals.json").read_text(
+                    encoding="utf-8"
+                )
+            )["evals"] if item["id"] == 14],
+            ensure_ascii=False,
+        )
+        self.assertNotIn("4–6 米", portrait_contract)
+        self.assertNotIn("10–15%", portrait_contract)
+
         panorama_flow = skill.split("再判断是否需要 360° 全景预览：", 1)[1].split(
             "直接出图时，", 1
         )[0]
