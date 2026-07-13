@@ -172,6 +172,58 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("帽子", intro)
         self.assertIn("用户指定的服装或道具特征", intro)
 
+    def test_photo_reference_guidance_is_generic_and_bilingual(self):
+        skill = self.skill_md.read_text(encoding="utf-8")
+        reference = (
+            ROOT
+            / "multi-style-image-generator"
+            / "references"
+            / "game-visual-styles.md"
+        ).read_text(encoding="utf-8")
+        eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
+        evals = json.loads(eval_path.read_text(encoding="utf-8"))["evals"]
+        photo_evals = [item for item in evals if item["id"] in (10, 11)]
+
+        scoped_text = "\n".join(
+            (
+                self.readme_zh,
+                self.readme_en,
+                skill.split("再判断是否有上传图片或照片参考：", 1)[1].split(
+                    "再判断界面模式：", 1
+                )[0],
+                reference.split("## 2. 上传图片 / 人像参考规则", 1)[1].split(
+                    "\n## 3.", 1
+                )[0],
+                json.dumps(photo_evals, ensure_ascii=False),
+            )
+        )
+        personal_fragments = (
+            "第一张参考场景和穿着",
+            "第二张参考我的脸",
+            "墨镜戴上",
+            "米色帽子",
+            "黑外套",
+            "红围巾",
+            "红瓶",
+            "参考第一张衣服",
+        )
+        for fragment in personal_fragments:
+            with self.subTest(fragment=fragment):
+                self.assertNotIn(fragment, scoped_text)
+
+        self.assertIn(
+            "需要保留的特征必须来自用户明确指定或参考图实际内容",
+            self.readme_zh,
+        )
+        self.assertIn(
+            "the user explicitly specifies or that is actually present",
+            self.readme_en,
+        )
+        self.assertIn("Do not add accessories, clothing, or props", self.readme_en)
+        self.assertTrue(
+            all("不得自行添加未指定" in item["expected_output"] for item in photo_evals)
+        )
+
     def test_onboarding_eval_locks_terminology_and_video_durations(self):
         eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
         payload = json.loads(eval_path.read_text(encoding="utf-8"))

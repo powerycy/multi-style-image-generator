@@ -32,9 +32,9 @@ The examples below show representative output directions. Actual results vary by
 
 ## Core Capabilities
 
-- Direct image generation from Chinese user requests.
+- Direct image generation from natural-language requests.
 - Prompt-only mode when the user asks for a prompt instead of an image.
-- Uploaded-photo references: use one image for the scene and another for identity, while preserving specified outfit, sunglasses, hat, props, and pose.
+- Uploaded-photo references: accept any number of reference images and assign identity, scene, clothing/prop, composition, or style roles from the user's instructions or what is actually visible in each image. Any preserved feature must be something the user explicitly specifies or that is actually present; do not invent details.
 - Unified style transfer: when a real-person photo is used, the person, face, clothing, props, and background are prompted to be redrawn into one coherent target style instead of pasted together.
 - Lightweight, full, or no UI/HUD modes.
 - Real landmark stylization while keeping the main subject recognizable.
@@ -66,7 +66,7 @@ cp -R multi-style-image-generator ~/.codex/skills/
 Restart Codex after installation, then invoke it with:
 
 ```text
-使用 $multi-style-image-generator 生成一张东方修仙风格的宗门山门图。
+Use $multi-style-image-generator to generate an eastern cultivation-style mountain sect entrance.
 ```
 
 Prompt-only work, BigModel/CogVideoX video, image extraction, and the 360 HTML viewer scripts use only the Python standard library and need no extra Python packages. Spatial photo previews and 2:1 normalization need Pillow / NumPy; on the first launcher run, an isolated environment is created automatically at `multi-style-image-generator/.venv` and dependencies are downloaded from `requirements.txt`. Later runs reuse that environment.
@@ -85,23 +85,23 @@ The first download requires network access. If installation fails because of net
 In everyday use, mention this skill in Codex and describe the style, scene, UI mode, and output type:
 
 ```text
-使用 $multi-style-image-generator 生成一张原神开放世界游戏实况截图风格的北京故宫，轻量 UI，直接出图。
+Use $multi-style-image-generator to generate an open-world fantasy gameplay-style image of Beijing's Forbidden City with lightweight UI. Generate the image directly.
 ```
 
 Common phrases:
 
 | Desired Result | Recommended Phrase |
 |---|---|
-| Prompt only | `只给出 prompt` / `不用出图` |
-| Normal image | `直接出图` |
-| Full game interface | `全量 UI` |
-| Small location UI | `轻量 UI` |
-| No text or HUD | `无 UI` |
-| 360° panorama | `360°×180° 等距柱状投影全景图，2:1 宽高比，左右边缘无缝衔接` |
-| Spatial photo effect | `生成空间照片预览，使用 --spatial-mode displacement` |
-| Depth mesh effect | `生成空间照片预览，使用 --spatial-mode mesh` |
-| Image-to-video | `把这张图变成 5 秒动态视频` |
-| 360° panorama image-to-video | `先生成 2:1 全景图，再图生视频，并生成 360° 全景视频预览 HTML` |
+| Prompt only | `Return only the prompt; do not generate an image` |
+| Normal image | `Generate the image directly` |
+| Full game interface | `Full UI` |
+| Small location UI | `Lightweight UI` |
+| No text or HUD | `No UI` |
+| 360° panorama | `360°×180° equirectangular panorama, 2:1 aspect ratio, seamless left and right edges` |
+| Spatial photo effect | `Create a spatial photo preview with --spatial-mode displacement` |
+| Depth mesh effect | `Create a spatial photo preview with --spatial-mode mesh` |
+| Image-to-video | `Turn this image into a 5-second video` |
+| 360° panorama image-to-video | `First generate a 2:1 panorama, then animate it and create a 360° panorama video preview HTML file` |
 
 Video mode requires a BigModel/CogVideoX API key. On the first video generation on macOS, a native hidden-input dialog appears and saves the key securely in Keychain. Later requests automatically reuse it. Never paste a real key into Codex chat, the README, scripts, or commit history.
 
@@ -123,43 +123,43 @@ python3 multi-style-image-generator/scripts/create_bigmodel_video.py --forget-ap
 Generate a normal image:
 
 ```text
-使用 $multi-style-image-generator 生成一张维多利亚蒸汽神秘学风格的故宫，轻量 UI，直接出图。
+Use $multi-style-image-generator to generate a Victorian steam-occult version of the Forbidden City with lightweight UI. Generate the image directly.
 ```
 
 Stylize uploaded photos:
 
 ```text
-使用 $multi-style-image-generator 把我上传的照片改成 7 种风格。第一张参考场景和穿着，第二张参考我的脸，要能看出来是我；墨镜戴上，人物和背景都要统一成对应画风，不要像抠图贴背景。
+Use $multi-style-image-generator to transform my uploaded portrait into an eastern cultivation style. Preserve recognizable identity plus the clothing colors and pose that are actually present and that I explicitly ask to keep. Redraw the person and background coherently. Do not create a photo collage. Do not add accessories, clothing, or props that I did not request.
 ```
 
 Prompt-only mode:
 
 ```text
-使用 $multi-style-image-generator 写一个暗黑中式神话古寺战斗场景的提示词，不用出图。
+Use $multi-style-image-generator to write a prompt for a dark Chinese-myth battle at an ancient temple. Do not generate an image.
 ```
 
 Generate a 360° panorama and interactive preview:
 
 ```text
-使用 $multi-style-image-generator 生成一张东方修仙风格的 360°×180° 等距柱状投影全景图，2:1 宽高比，左右边缘无缝衔接，直接出图，并生成可交互 360° 全景预览 HTML。
+Use $multi-style-image-generator to generate an eastern cultivation-style 360°×180° equirectangular panorama with a 2:1 aspect ratio and seamless left and right edges, then create an interactive 360° panorama preview HTML file.
 ```
 
 Generate a dynamic-enhanced 360 preview:
 
 ```text
-使用 $multi-style-image-generator 生成一张东方修仙风格的 360° 全景图，直接出图，并生成动态增强 360° 全景预览 HTML，有云雾、灵气粒子和自动巡游。
+Use $multi-style-image-generator to generate an eastern cultivation-style 360° panorama and a dynamic-enhanced preview HTML with mist, spirit particles, and automatic camera drift.
 ```
 
 Generate a spatial photo preview:
 
 ```text
-使用 $multi-style-image-generator 根据这张图生成空间照片预览，使用 --spatial-mode displacement。
+Use $multi-style-image-generator to create a spatial photo preview from this image with --spatial-mode displacement.
 ```
 
 Generate a video:
 
 ```text
-使用 $multi-style-image-generator 把这张敦煌壁窟图变成 5 秒动态视频，镜头缓慢推进，烛火和尘埃轻微流动。
+Use $multi-style-image-generator to turn this Dunhuang grotto image into a 5-second video with a slow camera push-in, gently moving candle flames, and drifting dust.
 ```
 
 ## 360° Panorama Notes
@@ -171,7 +171,7 @@ For 360° panorama requests, the skill asks the image generator for a 2:1 equire
 Normalization fixes the file ratio only. It cannot turn an ordinary wide image into a geometrically perfect seamless panorama. For best results, include these phrases in the user request:
 
 ```text
-360°×180° 等距柱状投影全景图，2:1 宽高比，左右边缘无缝衔接
+360°×180° equirectangular panorama, 2:1 aspect ratio, seamless left and right edges
 ```
 
 The dynamic-enhanced viewer is not a video. It keeps the 2:1 panorama as a static base image and adds real-time WebGL / Canvas effects such as camera drift, mist, spirit particles, glow, and subtle FOV breathing.
