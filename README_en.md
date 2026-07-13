@@ -34,7 +34,7 @@ The examples below show representative output directions. Actual results vary by
 
 - Direct image generation from natural-language requests.
 - Prompt-only mode when the user asks for a prompt instead of an image.
-- Uploaded-photo references: accept any number of reference images and assign identity, scene, clothing/prop, composition, or style roles from the user's instructions or what is actually visible in each image. Any preserved feature must be something the user explicitly specifies or that is actually present; do not invent details.
+- Uploaded-photo references: accept any number of reference images and assign identity, scene, clothing/prop, composition, or style roles from the user's instructions or visible image content. By default, the workflow preserves identity anchors while redesigning clothing, action, and lighting to integrate the person into the target world. Original clothing, poses, or props are preserved only when explicitly requested.
 - Unified style transfer: when a real-person photo is used, the person, face, clothing, props, and background are prompted to be redrawn into one coherent target style instead of pasted together.
 - Lightweight, full, or no UI/HUD modes.
 - Real landmark stylization while keeping the main subject recognizable.
@@ -129,7 +129,7 @@ Use $multi-style-image-generator to generate a Victorian steam-occult version of
 Stylize uploaded photos:
 
 ```text
-Use $multi-style-image-generator to transform my uploaded portrait into an eastern cultivation style. Preserve recognizable identity plus the clothing colors and pose that are actually present and that I explicitly ask to keep. Redraw the person and background coherently. Do not create a photo collage. Do not add accessories, clothing, or props that I did not request.
+Use $multi-style-image-generator to transform my uploaded portrait into an eastern cultivation style. Preserve recognizable identity while redesigning clothing, action, and lighting for the cultivation world, with the person naturally participating in the scene. Redraw the person and environment coherently; avoid photo collage artifacts, modern-clothing mismatch, and posed group-photo composition.
 ```
 
 Prompt-only mode:
@@ -267,7 +267,8 @@ multi-style-image-generator/
     ├── evals/
     │   └── evals.json
     ├── references/
-    │   └── game-visual-styles.md
+    │   ├── game-visual-styles.md
+    │   └── portrait-panorama-qa.md
     └── scripts/
 ```
 

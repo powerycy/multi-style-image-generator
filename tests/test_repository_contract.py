@@ -170,7 +170,9 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertEqual(skill.count("5–10 秒"), 1, "range wording may appear only as a prohibition")
         self.assertNotIn("黑外套", intro)
         self.assertNotIn("帽子", intro)
-        self.assertIn("用户指定的服装或道具特征", intro)
+        self.assertIn("保留身份锚点", intro)
+        self.assertIn("重新设计到目标世界观", intro)
+        self.assertIn("只有用户明确要求保留原服装", intro)
 
     def test_photo_reference_guidance_is_generic_and_bilingual(self):
         skill = self.skill_md.read_text(encoding="utf-8")
@@ -211,25 +213,103 @@ class RepositoryContractTests(unittest.TestCase):
             with self.subTest(fragment=fragment):
                 self.assertNotIn(fragment, scoped_text)
 
+        self.assertIn("默认保留身份锚点并重设计服装、动作和光照", self.readme_zh)
+        self.assertIn("只有用户明确要求时才保留原服装、原姿势或原道具", self.readme_zh)
         self.assertIn(
-            "需要保留的特征必须来自用户明确指定或参考图实际内容",
-            self.readme_zh,
-        )
-        self.assertIn(
-            "the user explicitly specifies or that is actually present",
+            "preserves identity anchors while redesigning clothing, action, and lighting",
             self.readme_en,
         )
-        self.assertIn("Do not add accessories, clothing, or props", self.readme_en)
+        self.assertIn(
+            "Original clothing, poses, or props are preserved only when explicitly requested",
+            self.readme_en,
+        )
         self.assertTrue(
             all("不得自行添加未指定" in item["expected_output"] for item in photo_evals)
         )
+
+    def test_portrait_generation_defaults_to_world_integration(self):
+        skill = self.skill_md.read_text(encoding="utf-8")
+        photo_rules = skill.split("再判断是否有上传图片或照片参考：", 1)[1].split(
+            "再判断界面模式：", 1
+        )[0]
+
+        self.assertIn("references/portrait-panorama-qa.md", skill)
+        self.assertIn("默认将人物自然融入目标场景和世界观", photo_rules)
+        self.assertIn("默认重设计服装、鞋履、道具、姿势、动作、光照和材质", photo_rules)
+        self.assertIn("只有用户明确要求保留", photo_rules)
+        self.assertIn("严格身份保留模式", photo_rules)
+        self.assertNotIn(
+            "只把用户明确指定或参考图中实际存在的服装、配饰、道具和姿势作为约束",
+            photo_rules,
+        )
+
+    def test_portrait_panorama_qa_blocks_final_export_until_all_checks_pass(self):
+        qa_path = (
+            ROOT
+            / "multi-style-image-generator"
+            / "references"
+            / "portrait-panorama-qa.md"
+        )
+        self.assertTrue(qa_path.is_file())
+        qa = qa_path.read_text(encoding="utf-8")
+
+        required_rules = (
+            "身份相似度高于场景细节、特效和服装精致度",
+            "双眼视线同向",
+            "斗鸡眼",
+            "4–6 米",
+            "10–15%",
+            "顶部和底部极点",
+            "左右拼接缝",
+            "多个朝向",
+            "任一关键项失败",
+            "不导出最终 PNG 或 HTML",
+            "只是已规格化为 2:1",
+            "不得声称“已保留本人脸”",
+        )
+        for rule in required_rules:
+            with self.subTest(rule=rule):
+                self.assertIn(rule, qa)
+
+        skill = self.skill_md.read_text(encoding="utf-8")
+        panorama_flow = skill.split("再判断是否需要 360° 全景预览：", 1)[1].split(
+            "直接出图时，", 1
+        )[0]
+        self.assertIn("质检候选", panorama_flow)
+        self.assertIn("质检通过后", panorama_flow)
+        self.assertIn("create_panorama_viewer.py", panorama_flow)
+
+    def test_portrait_panorama_eval_and_existing_modes_are_preserved(self):
+        eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
+        payload = json.loads(eval_path.read_text(encoding="utf-8"))
+        portrait_panorama = [item for item in payload["evals"] if item["id"] == 14]
+
+        self.assertEqual(len(payload["evals"]), 14)
+        self.assertEqual(len(portrait_panorama), 1)
+        expected = portrait_panorama[0]["expected_output"]
+        self.assertIn("默认重设计世界观服装和叙事动作", expected)
+        self.assertIn("身份和眼神质检", expected)
+        self.assertIn("质检通过后才创建", expected)
+
+        skill = self.skill_md.read_text(encoding="utf-8")
+        preserved_routes = (
+            "scripts/create_dynamic_panorama_viewer.py",
+            "scripts/run_with_deps.py create_spatial_preview.py",
+            "scripts/create_bigmodel_video.py",
+            "scripts/create_panorama_frame_sequence_viewer.py",
+            "360° 全景图生视频模式",
+            "只写提示词",
+        )
+        for route in preserved_routes:
+            with self.subTest(route=route):
+                self.assertIn(route, skill)
 
     def test_onboarding_eval_locks_terminology_and_video_durations(self):
         eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         onboarding = [item for item in payload["evals"] if item["id"] == 12]
 
-        self.assertEqual(len(payload["evals"]), 13)
+        self.assertEqual(len(payload["evals"]), 14)
         self.assertEqual(len(onboarding), 1)
         expected = onboarding[0]["expected_output"]
         self.assertIn("360° 全景图", expected)
@@ -252,14 +332,14 @@ class RepositoryContractTests(unittest.TestCase):
         eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         key_onboarding = [item for item in payload["evals"] if item["id"] == 13]
-        self.assertEqual(len(payload["evals"]), 13)
+        self.assertEqual(len(payload["evals"]), 14)
         self.assertEqual(len(key_onboarding), 1)
         self.assertIn("不得要求用户把 SK 粘贴到对话中", key_onboarding[0]["expected_output"])
 
         workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
             encoding="utf-8"
         )
-        self.assertIn("assert len(data['evals']) == 13", workflow)
+        self.assertIn("assert len(data['evals']) == 14", workflow)
 
     def test_user_facing_panorama_labels_use_standard_term(self):
         skill = self.skill_md.read_text(encoding="utf-8")
