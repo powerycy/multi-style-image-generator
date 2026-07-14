@@ -234,16 +234,16 @@ class RepositoryContractTests(unittest.TestCase):
         )[0]
 
         self.assertIn("references/portrait-panorama-qa.md", skill)
-        self.assertIn("默认将人物自然融入目标场景和世界观", photo_rules)
-        self.assertIn("默认重设计服装、鞋履、道具、姿势、动作、光照和材质", photo_rules)
+        self.assertIn("让同一个人自然进入目标世界", photo_rules)
+        self.assertIn("默认重设计衣着、鞋履、发饰、道具、动作、材质和光照", photo_rules)
         self.assertIn("只有用户明确要求保留", photo_rules)
-        self.assertIn("严格身份保留模式", photo_rules)
+        self.assertIn("人物身份一致", photo_rules)
         self.assertNotIn(
             "只把用户明确指定或参考图中实际存在的服装、配饰、道具和姿势作为约束",
             photo_rules,
         )
 
-    def test_portrait_panorama_qa_uses_tiered_token_aware_delivery(self):
+    def test_portrait_panorama_qa_uses_intent_led_delivery(self):
         qa_path = (
             ROOT
             / "multi-style-image-generator"
@@ -257,12 +257,13 @@ class RepositoryContractTests(unittest.TestCase):
             "身份相似度高于场景细节、特效和服装精致度",
             "双眼视线同向",
             "斗鸡眼",
-            "8–12 米",
-            "6–10%",
+            "同一个人自然进入目标世界",
+            "衣着、鞋履、发饰、道具、动作、材质和光照",
+            "根据用户意图和画面叙事自然决定",
+            "不因远景人物无法进行人像级身份核验",
             "顶部和底部极点",
             "左右拼接缝",
             "多个朝向",
-            "通过 / 可用但需说明 / 不通过",
             "正常观看尺寸",
             "不要为了检查而过度放大",
             "自动重绘最多一次",
@@ -283,16 +284,52 @@ class RepositoryContractTests(unittest.TestCase):
             )["evals"] if item["id"] == 14],
             ensure_ascii=False,
         )
-        self.assertNotIn("4–6 米", portrait_contract)
-        self.assertNotIn("10–15%", portrait_contract)
+        for obsolete in (
+            "4–6 米",
+            "8–12 米",
+            "6–10%",
+            "10–15%",
+            "通过 / 可用但需说明 / 不通过",
+            "可用但需说明",
+        ):
+            with self.subTest(obsolete=obsolete):
+                self.assertNotIn(obsolete, portrait_contract)
 
         panorama_flow = skill.split("再判断是否需要 360° 全景预览：", 1)[1].split(
             "直接出图时，", 1
         )[0]
         self.assertIn("质检候选", panorama_flow)
-        self.assertIn("可用但需说明", panorama_flow)
+        self.assertIn("根据用户意图和画面叙事自然决定", panorama_flow)
         self.assertIn("自动重绘最多一次", panorama_flow)
         self.assertIn("create_panorama_viewer.py", panorama_flow)
+
+    def test_uploaded_person_rule_covers_generation_and_preserves_derived_assets(self):
+        skill = self.skill_md.read_text(encoding="utf-8")
+        photo_rules = skill.split("再判断是否有上传图片或照片参考：", 1)[1].split(
+            "再判断界面模式：", 1
+        )[0]
+
+        generation_rules = (
+            "图片、360° 全景图或视频内容",
+            "同一个人自然进入目标世界",
+            "衣着、鞋履、发饰、道具、动作、材质和光照",
+            "只有用户明确要求保留",
+        )
+        for rule in generation_rules:
+            with self.subTest(rule=rule):
+                self.assertIn(rule, photo_rules)
+
+        derived_rules = (
+            "空间照片预览",
+            "360° 全景 HTML",
+            "动态增强全景",
+            "继承已有底图",
+            "不得自行换脸、换装",
+            "先生成并质检融合后的底图",
+        )
+        for rule in derived_rules:
+            with self.subTest(rule=rule):
+                self.assertIn(rule, photo_rules)
 
     def test_portrait_panorama_eval_and_existing_modes_are_preserved(self):
         eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
@@ -304,8 +341,14 @@ class RepositoryContractTests(unittest.TestCase):
         expected = portrait_panorama[0]["expected_output"]
         self.assertIn("默认重设计世界观服装和叙事动作", expected)
         self.assertIn("身份和眼神质检", expected)
-        self.assertIn("可用但需说明", expected)
+        self.assertIn("同一个人自然进入目标世界", expected)
+        self.assertIn("主要观看方向", expected)
+        self.assertIn("根据用户意图", expected)
+        self.assertIn("不因远景人物无法进行人像级身份核验", expected)
         self.assertIn("自动重绘最多一次", expected)
+        self.assertNotIn("可用但需说明", expected)
+        self.assertNotIn("8–12 米", expected)
+        self.assertNotIn("6–10%", expected)
 
         skill = self.skill_md.read_text(encoding="utf-8")
         preserved_routes = (
