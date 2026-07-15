@@ -98,7 +98,13 @@ class RunWithDepsTests(unittest.TestCase):
         self.assertEqual(result, venv_python)
         self.assertEqual(
             [command for command, _ in runner.commands],
-            [[str(venv_python), "-c", "import PIL, numpy"]],
+            [
+                [
+                    str(venv_python),
+                    "-c",
+                    "import PIL, numpy, torch, transformers, safetensors, huggingface_hub",
+                ]
+            ],
         )
 
     def test_ensure_environment_synchronizes_changed_requirements(self):

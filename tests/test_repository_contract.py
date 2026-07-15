@@ -126,6 +126,33 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("rm -rf", self.readme_zh)
         self.assertNotIn("rm -rf", self.readme_en)
 
+    def test_readmes_describe_the_real_spatial_photo_default(self):
+        combined = self.readme_zh + self.readme_en
+
+        self.assertIn("Depth Anything V2", self.readme_zh)
+        self.assertIn("Depth Anything V2", self.readme_en)
+        self.assertIn("真实深度", self.readme_zh)
+        self.assertIn("real model depth", self.readme_en)
+        self.assertIn("PyTorch / Transformers", self.readme_zh)
+        self.assertIn("PyTorch / Transformers", self.readme_en)
+        self.assertIn("空间景深图", self.readme_zh)
+        self.assertIn("spatial depth image", self.readme_en)
+        self.assertNotIn("displacement`：推荐默认值", self.readme_zh)
+        self.assertNotIn("`displacement`: recommended default", self.readme_en)
+        self.assertNotIn("--spatial-mode displacement", combined)
+
+        evals = json.loads(
+            (ROOT / "multi-style-image-generator" / "evals" / "evals.json").read_text(
+                encoding="utf-8"
+            )
+        )["evals"]
+        spatial = [item for item in evals if item["id"] == 15]
+        self.assertEqual(len(spatial), 1)
+        expected = spatial[0]["expected_output"]
+        self.assertIn("Depth Anything V2 Small", expected)
+        self.assertIn("immersive-v18 单 mesh HTML", expected)
+        self.assertIn("不得静默改用启发式深度", expected)
+
     def test_readme_showcase_gifs_are_directly_embedded(self):
         gif_paths = (
             "assets/examples/spatial-depth-preview.gif",
@@ -336,7 +363,7 @@ class RepositoryContractTests(unittest.TestCase):
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         portrait_panorama = [item for item in payload["evals"] if item["id"] == 14]
 
-        self.assertEqual(len(payload["evals"]), 14)
+        self.assertEqual(len(payload["evals"]), 15)
         self.assertEqual(len(portrait_panorama), 1)
         expected = portrait_panorama[0]["expected_output"]
         self.assertIn("默认重设计世界观服装和叙事动作", expected)
@@ -368,7 +395,7 @@ class RepositoryContractTests(unittest.TestCase):
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         onboarding = [item for item in payload["evals"] if item["id"] == 12]
 
-        self.assertEqual(len(payload["evals"]), 14)
+        self.assertEqual(len(payload["evals"]), 15)
         self.assertEqual(len(onboarding), 1)
         expected = onboarding[0]["expected_output"]
         self.assertIn("360° 全景图", expected)
@@ -391,14 +418,14 @@ class RepositoryContractTests(unittest.TestCase):
         eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         key_onboarding = [item for item in payload["evals"] if item["id"] == 13]
-        self.assertEqual(len(payload["evals"]), 14)
+        self.assertEqual(len(payload["evals"]), 15)
         self.assertEqual(len(key_onboarding), 1)
         self.assertIn("不得要求用户把 SK 粘贴到对话中", key_onboarding[0]["expected_output"])
 
         workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
             encoding="utf-8"
         )
-        self.assertIn("assert len(data['evals']) == 14", workflow)
+        self.assertIn("assert len(data['evals']) == 15", workflow)
 
     def test_user_facing_panorama_labels_use_standard_term(self):
         skill = self.skill_md.read_text(encoding="utf-8")
@@ -421,10 +448,13 @@ class RepositoryContractTests(unittest.TestCase):
     def test_ci_workflow_runs_repository_tests(self):
         workflow_path = ROOT / ".github" / "workflows" / "ci.yml"
         self.assertTrue(workflow_path.is_file())
+        workflow = workflow_path.read_text(encoding="utf-8")
+        self.assertIn("python -m unittest discover -s tests -v", workflow)
         self.assertIn(
-            "python -m unittest discover -s tests -v",
-            workflow_path.read_text(encoding="utf-8"),
+            "python -m unittest discover -s multi-style-image-generator/tests -v",
+            workflow,
         )
+        self.assertIn('python -m pip install "Pillow>=10,<13" "numpy>=1.26,<3"', workflow)
 
     def test_ci_workflow_verifies_executable_script_modes(self):
         workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(

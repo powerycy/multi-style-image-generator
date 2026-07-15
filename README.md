@@ -39,7 +39,7 @@
 - UI 模式控制：支持轻量 UI、全量 UI、无 UI 三种模式。
 - 真实地点风格化：尽量保留真实地点主体可识别度，同时加入目标风格元素。
 - 360° 全景图工作流：支持 360°×180° 等距柱状投影提示、2:1 比例规格化、静态 HTML 预览和动态增强 HTML 预览。
-- 空间照片预览：支持 `--spatial-mode displacement` 和 `--spatial-mode mesh` 两种模式，用原图和 depth map 生成本地可交互 HTML。
+- 空间景深图 / 空间照片预览：自动复用用户上传或刚生成的图片，默认通过 Depth Anything V2 生成真实深度和稳定深度图，再创建无 HUD、可自动巡游和拖动查看的单层 depth mesh HTML。
 - 动态视频模式：支持 BigModel/CogVideoX 文生视频和图生视频；macOS 首次安全输入后保存到钥匙串，后续自动读取，不把 key 写进文件或对话。
 
 ## 支持风格
@@ -69,7 +69,7 @@ cp -R multi-style-image-generator ~/.codex/skills/
 使用 $multi-style-image-generator 生成一张东方修仙风格的宗门山门图。
 ```
 
-纯提示词、BigModel/CogVideoX 视频、图片提取以及 360 HTML 查看器脚本只使用 Python 标准库，不需要额外安装 Python 包。空间照片预览和 2:1 图片规格化需要 Pillow / NumPy；首次通过启动器运行时，会在 `multi-style-image-generator/.venv` 自动创建隔离环境，并从 `requirements.txt` 下载依赖。后续运行会复用这个环境。
+纯提示词、BigModel/CogVideoX 视频、图片提取以及 360 HTML 查看器脚本只使用 Python 标准库。空间景深图和 2:1 图片规格化通过启动器使用隔离环境；`requirements.txt` 包含 Pillow / NumPy，以及真实深度推理所需的 PyTorch / Transformers、Safetensors 和 Hugging Face Hub。首次运行会在 `multi-style-image-generator/.venv` 自动安装依赖；首次生成空间景深图还会下载 Depth Anything V2 Small 模型，后续复用虚拟环境和 Hugging Face 缓存，无需手工运行 `pip`。
 
 如果希望提前准备依赖，请先进入 Skill 目录，再手动运行：
 
@@ -98,8 +98,7 @@ python3 scripts/run_with_deps.py create_spatial_preview.py --help
 | 少量地点提示 | `轻量 UI` |
 | 没有任何文字和界面 | `无 UI` |
 | 360° 全景图 | `360°×180° 等距柱状投影全景图，2:1 宽高比，左右边缘无缝衔接` |
-| 空间照片效果 | `生成空间照片预览，使用 --spatial-mode displacement` |
-| 深度网格效果 | `生成空间照片预览，使用 --spatial-mode mesh` |
+| 空间景深图 / 空间照片 | `根据当前图片生成空间景深图`；默认自动生成真实深度、稳定深度图和交互 HTML，无需指定参数 |
 | 图生视频 | `把这张图变成 5 秒动态视频` |
 | 360° 全景图生视频 | `先生成 2:1 全景图，再图生视频，并生成 360° 全景视频预览 HTML` |
 
@@ -153,7 +152,7 @@ python3 multi-style-image-generator/scripts/create_bigmodel_video.py --forget-ap
 生成空间照片预览：
 
 ```text
-使用 $multi-style-image-generator 根据这张图生成空间照片预览，使用 --spatial-mode displacement。
+使用 $multi-style-image-generator 根据当前图片生成空间景深图；使用真实深度，并生成可交互空间照片 HTML。
 ```
 
 生成动态视频：
@@ -180,23 +179,27 @@ python3 multi-style-image-generator/scripts/create_bigmodel_video.py --forget-ap
 
 ## 空间照片预览说明
 
-空间照片预览用于普通图片，不用于 360° 全景图。它需要一张原图和一张 depth map；如果没有 depth map，脚本会生成启发式深度图，只适合快速预览。
+空间景深图用于普通图片，不用于 360° 全景图。用户上传了图片或对话中刚生成了图片时，skill 会直接复用当前图片，不会要求重复上传。用户要求先把人物融入新场景时，会先生成并质检统一画风的底图，再基于该底图制作空间效果。
 
-两种模式用 `--spatial-mode` 区分：
+默认流程无需用户选择技术参数：
 
-- `displacement`：推荐默认值。用全屏 WebGL shader 根据深度图做空间位移，滑动时更像照片层次在移动，界面里使用“空间位移、空间感、移动幅度”等命名。
-- `mesh`：用深度图生成细分网格，再用相机横移渲染。它的空间感更明显，但对单张图更容易出现边缘拉伸、破面和假 3D 感。
+- 使用 Depth Anything V2 Small 推理 raw depth，并生成尺寸与原图一致的稳定深度图；不会静默改用启发式深度。
+- 使用单层 depth mesh 创建沉浸式 HTML，支持自动巡游、鼠标、触摸和设备方向，不显示 HUD、滑杆或按钮。
+- HTML 内嵌图片与稳定深度图，可以直接通过 `file://` 打开。标准交付包括 raw depth、稳定 depth PNG 和 HTML；如果复用了已有深度图，则只交付实际生成的文件。
+- 只有用户明确接受非模型快速预览时，才使用 `--depth-backend heuristic`，并将来源标记为 `heuristic-fallback`。
+
+这里的“空间照片”指类似 Apple 空间照片观看感受的本地交互 HTML，不是 Apple 原生空间照片文件或 HEIC 空间媒体容器。
 
 创建空间照片预览：
 
 ```bash
-python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --depth path/to/depth.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --out-dir path/to/output
 ```
 
-如果没有 depth map：
+如果已有稳定深度图：
 
 ```bash
-python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --depth path/to/stable-depth.png --out-dir path/to/output
 ```
 
 ## 视频模式说明
@@ -231,7 +234,7 @@ python3 multi-style-image-generator/scripts/create_dynamic_panorama_viewer.py pa
 创建空间照片预览：
 
 ```bash
-python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --out-dir path/to/output
 ```
 
 生成 BigModel/CogVideoX 视频：
@@ -269,6 +272,10 @@ multi-style-image-generator/
     ├── references/
     │   ├── game-visual-styles.md
     │   └── portrait-panorama-qa.md
+    ├── assets/
+    │   └── spatial-v18-template.html
+    ├── tests/
+    │   └── test_spatial_v18.py
     └── scripts/
 ```
 
@@ -276,7 +283,8 @@ multi-style-image-generator/
 
 - Python 3.9+
 - 提示词、BigModel/CogVideoX 视频、图片提取和 360 HTML 查看器脚本只需要 Python 标准库
-- `normalize_equirectangular_aspect.py` 和空间照片预览脚本的 Pillow / NumPy 依赖由启动器自动安装到 `multi-style-image-generator/.venv`
+- Pillow / NumPy 和空间真实深度推理所需的 PyTorch / Transformers、Safetensors、Hugging Face Hub 由启动器自动安装到 `multi-style-image-generator/.venv`
+- 首次生成空间景深图会下载 Depth Anything V2 Small 模型；后续复用 Hugging Face 缓存。首次安装和模型下载需要网络，并会比普通出图占用更多时间和磁盘空间
 - 360° 全景 HTML 预览、动态增强预览和空间照片预览需要支持 WebGL 的现代浏览器
 - 视频抽帧预览可选用系统 `ffmpeg`；先用 `command -v ffmpeg` 检测，缺失时请自行安装（macOS 可使用 `brew install ffmpeg`），Skill 不会自动安装系统软件
 

@@ -34,12 +34,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: multi-style-image-generator/requirements.txt
+      - name: Install lightweight test dependencies
+        run: python -m pip install "Pillow>=10,<13" "numpy>=1.26,<3"
       - name: Compile scripts
         run: python -m compileall -q multi-style-image-generator/scripts
-      - name: Run tests
+      - name: Run repository tests
         run: python -m unittest discover -s tests -v
+      - name: Run spatial depth tests
+        run: python -m unittest discover -s multi-style-image-generator/tests -v
       - name: Validate evaluations
-        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 14"
+        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 15"
       - name: Check video help
         run: python multi-style-image-generator/scripts/create_bigmodel_video.py --help
       - name: Check panorama help

@@ -39,7 +39,7 @@ The examples below show representative output directions. Actual results vary by
 - Lightweight, full, or no UI/HUD modes.
 - Real landmark stylization while keeping the main subject recognizable.
 - 360° panorama workflow: 360°×180° equirectangular prompting, 2:1 ratio normalization, static HTML previews, and dynamic-enhanced HTML previews.
-- Spatial photo preview workflow: use `--spatial-mode displacement` or `--spatial-mode mesh` to generate local interactive HTML from an image and a depth map.
+- Spatial depth image / spatial photo preview workflow: automatically reuse an uploaded or recently generated image, infer real model depth with Depth Anything V2, stabilize the depth map, and create a HUD-free single-depth-mesh HTML viewer with automatic drift and direct interaction.
 - BigModel/CogVideoX video workflow: supports text-to-video and image-to-video; on macOS the first secure entry is saved to Keychain and automatically reused without writing the key to files or chat.
 
 ## Supported Style Directions
@@ -69,7 +69,7 @@ Restart Codex after installation, then invoke it with:
 Use $multi-style-image-generator to generate an eastern cultivation-style mountain sect entrance.
 ```
 
-Prompt-only work, BigModel/CogVideoX video, image extraction, and the 360 HTML viewer scripts use only the Python standard library and need no extra Python packages. Spatial photo previews and 2:1 normalization need Pillow / NumPy; on the first launcher run, an isolated environment is created automatically at `multi-style-image-generator/.venv` and dependencies are downloaded from `requirements.txt`. Later runs reuse that environment.
+Prompt-only work, BigModel/CogVideoX video, image extraction, and the 360 HTML viewer scripts use only the Python standard library. Spatial depth images and 2:1 normalization run through an isolated launcher environment. `requirements.txt` includes Pillow / NumPy plus PyTorch / Transformers, Safetensors, and Hugging Face Hub for real depth inference. The first run installs these packages automatically in `multi-style-image-generator/.venv`; the first spatial-depth request also downloads the Depth Anything V2 Small model. Later runs reuse both the environment and Hugging Face cache, with no manual `pip` command required.
 
 To prepare the dependencies manually, first enter the Skill directory and run:
 
@@ -98,8 +98,7 @@ Common phrases:
 | Small location UI | `Lightweight UI` |
 | No text or HUD | `No UI` |
 | 360° panorama | `360°×180° equirectangular panorama, 2:1 aspect ratio, seamless left and right edges` |
-| Spatial photo effect | `Create a spatial photo preview with --spatial-mode displacement` |
-| Depth mesh effect | `Create a spatial photo preview with --spatial-mode mesh` |
+| Spatial depth image / spatial photo | `Create a spatial depth image from the current image`; real depth, stabilized depth, and interactive HTML are generated automatically without mode parameters |
 | Image-to-video | `Turn this image into a 5-second video` |
 | 360° panorama image-to-video | `First generate a 2:1 panorama, then animate it and create a 360° panorama video preview HTML file` |
 
@@ -153,7 +152,7 @@ Use $multi-style-image-generator to generate an eastern cultivation-style 360° 
 Generate a spatial photo preview:
 
 ```text
-Use $multi-style-image-generator to create a spatial photo preview from this image with --spatial-mode displacement.
+Use $multi-style-image-generator to create a spatial depth image from the current image, using real depth and an interactive spatial-photo HTML preview.
 ```
 
 Generate a video:
@@ -180,23 +179,27 @@ The 360 example in this README is shown as a GIF so it can be viewed directly on
 
 ## Spatial Photo Preview Notes
 
-Spatial photo preview is for ordinary images, not 360 panoramas. It uses a source image and a depth map. If no depth map is provided, the helper script creates a heuristic depth map, which is only suitable for quick previews.
+Spatial depth images are for ordinary images, not 360 panoramas. When the user has uploaded an image or the conversation has just generated one, the skill reuses that current image without asking for another upload. If the user first asks to place a person into a new scene, the workflow generates and checks the integrated base image before deriving the spatial preview.
 
-Use `--spatial-mode` to choose between two modes:
+The default flow does not ask the user to choose technical parameters:
 
-- `displacement`: recommended default. It uses a full-screen WebGL shader to apply depth-driven spatial displacement, so the motion feels more like layered photo parallax. UI labels prefer terms such as spatial displacement, spatial feel, and motion strength.
-- `mesh`: creates a subdivided mesh from the depth map and renders it with camera movement. It has a stronger 3D feel, but a single image is more likely to show edge stretching, broken surfaces, or fake-3D artifacts.
+- Depth Anything V2 Small infers raw depth, then the workflow creates a stabilized depth map matching the source dimensions. It does not silently substitute heuristic depth.
+- A single depth mesh powers the immersive HTML viewer with automatic drift, mouse, touch, and device-orientation input. The viewer has no HUD, sliders, or buttons.
+- The HTML embeds the RGB image and stabilized depth map and opens directly over `file://`. Standard deliverables are raw depth, stabilized depth PNG, and HTML; when an existing depth map is reused, only files actually generated are delivered.
+- The `--depth-backend heuristic` fallback is used only when the user explicitly accepts a non-model quick preview, and its provenance is labeled `heuristic-fallback`.
+
+“Spatial photo” here means a local interactive HTML experience similar to viewing an Apple spatial photo. It is not an Apple-native spatial photo file or HEIC spatial-media container.
 
 Create a spatial photo preview:
 
 ```bash
-python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --depth path/to/depth.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --out-dir path/to/output
 ```
 
-Without a depth map:
+With an existing stabilized depth map:
 
 ```bash
-python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --depth path/to/stable-depth.png --out-dir path/to/output
 ```
 
 ## Video Mode Notes
@@ -231,7 +234,7 @@ python3 multi-style-image-generator/scripts/create_dynamic_panorama_viewer.py pa
 Create a spatial photo preview:
 
 ```bash
-python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode displacement
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --out-dir path/to/output
 ```
 
 Generate a BigModel/CogVideoX video:
@@ -269,6 +272,10 @@ multi-style-image-generator/
     ├── references/
     │   ├── game-visual-styles.md
     │   └── portrait-panorama-qa.md
+    ├── assets/
+    │   └── spatial-v18-template.html
+    ├── tests/
+    │   └── test_spatial_v18.py
     └── scripts/
 ```
 
@@ -276,7 +283,8 @@ multi-style-image-generator/
 
 - Python 3.9+
 - Prompting, BigModel/CogVideoX video, image extraction, and the 360 HTML viewer scripts require only the Python standard library
-- The launcher automatically installs Pillow / NumPy for `normalize_equirectangular_aspect.py` and the spatial photo preview scripts into `multi-style-image-generator/.venv`
+- The launcher automatically installs Pillow / NumPy plus PyTorch / Transformers, Safetensors, and Hugging Face Hub for real spatial-depth inference into `multi-style-image-generator/.venv`
+- The first spatial-depth request downloads the Depth Anything V2 Small model; later runs reuse the Hugging Face cache. Initial setup requires network access and uses more time and disk space than ordinary image generation
 - A modern browser with WebGL support for the 360, dynamic-enhanced, and spatial preview HTML
 - Frame-sequence previews can optionally use the system `ffmpeg`; detect it with `command -v ffmpeg` and install it yourself if missing (for example, `brew install ffmpeg` on macOS), because the Skill never installs system software automatically
 

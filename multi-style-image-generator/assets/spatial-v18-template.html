@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spatial Photo Preview</title>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #101010;
+    }
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: #111;
+    }
+    canvas {
+      width: min(100vw, calc(100vh * 1.77683316));
+      height: min(100vh, calc(100vw / 1.77683316));
+      display: block;
+      background: #161616;
+      cursor: crosshair;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage"><canvas id="view"></canvas></div>
+  <script>
+    const CONFIG = __CONFIG__;
+    const canvas = document.getElementById('view');
+    const gl = canvas.getContext('webgl', { antialias: true, preserveDrawingBuffer: true });
+    if (!gl) document.body.innerHTML = '<p style="padding:20px">当前浏览器不支持 WebGL。</p>';
+
+    const vertexSource = `
+      attribute vec3 aPosition;
+      attribute vec2 aUv;
+      uniform mat4 uMatrix;
+      uniform float uShiftX;
+      uniform float uShiftY;
+      uniform float uDepthScale;
+      varying vec2 vUv;
+      void main() {
+        float z = aPosition.z * uDepthScale;
+        vec3 p = vec3(aPosition.xy + vec2(uShiftX, uShiftY) * z, z * 0.34);
+        gl_Position = uMatrix * vec4(p, 1.0);
+        vUv = aUv;
+      }
+    `;
+    const fragmentSource = `
+      precision mediump float;
+      uniform sampler2D uImage;
+      uniform sampler2D uDepthMap;
+      uniform vec2 uTexelSize;
+      varying vec2 vUv;
+      void main() {
+        vec2 uv = clamp(vUv, vec2(0.001), vec2(0.999));
+        vec4 original = texture2D(uImage, uv);
+        float depthValue = texture2D(uDepthMap, uv).r;
+        float farMask = 1.0 - smoothstep(0.14, 0.30, depthValue);
+        vec2 radius = uTexelSize * 2.25;
+        vec3 softened = original.rgb * 0.40;
+        softened += texture2D(uImage, uv + vec2(radius.x, 0.0)).rgb * 0.15;
+        softened += texture2D(uImage, uv - vec2(radius.x, 0.0)).rgb * 0.15;
+        softened += texture2D(uImage, uv + vec2(0.0, radius.y)).rgb * 0.15;
+        softened += texture2D(uImage, uv - vec2(0.0, radius.y)).rgb * 0.15;
+        gl_FragColor = vec4(mix(original.rgb, softened, farMask * 0.52), original.a);
+      }
+    `;
+
+    const state = {
+      pointerX: 0,
+      pointerY: 0,
+      targetX: 0,
+      targetY: 0,
+      depthScale: 1.80,
+      motion: 1.40,
+      perspective: 1.15,
+      auto: true,
+      manualUntil: 0,
+      orientationBase: null,
+      orientationX: 0,
+      orientationY: 0,
+      orientationEnabled: false,
+      start: performance.now(),
+    };
+
+    function compile(type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
+      return shader;
+    }
+
+    const program = gl.createProgram();
+    gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSource));
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+    gl.useProgram(program);
+
+    const positionBuffer = gl.createBuffer();
+    const uvBuffer = gl.createBuffer();
+    const indexBuffer = gl.createBuffer();
+    const aPosition = gl.getAttribLocation(program, 'aPosition');
+    const aUv = gl.getAttribLocation(program, 'aUv');
+    const uMatrix = gl.getUniformLocation(program, 'uMatrix');
+    const uShiftX = gl.getUniformLocation(program, 'uShiftX');
+    const uShiftY = gl.getUniformLocation(program, 'uShiftY');
+    const uDepthScale = gl.getUniformLocation(program, 'uDepthScale');
+    const uImage = gl.getUniformLocation(program, 'uImage');
+    const uDepthMap = gl.getUniformLocation(program, 'uDepthMap');
+    const uTexelSize = gl.getUniformLocation(program, 'uTexelSize');
+    let indexCount = 0;
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = src;
+      });
+    }
+
+    function createTexture(image, unit) {
+      const texture = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      return texture;
+    }
+
+    function buildMesh(depthImage) {
+      const cols = CONFIG.cols;
+      const rows = CONFIG.rows;
+      const depthCanvas = document.createElement('canvas');
+      depthCanvas.width = cols + 1;
+      depthCanvas.height = rows + 1;
+      const ctx = depthCanvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(depthImage, 0, 0, depthCanvas.width, depthCanvas.height);
+      const data = ctx.getImageData(0, 0, depthCanvas.width, depthCanvas.height).data;
+      const aspect = CONFIG.width / CONFIG.height;
+      const positions = [];
+      const uvs = [];
+      const indices = [];
+
+      for (let y = 0; y <= rows; y++) {
+        for (let x = 0; x <= cols; x++) {
+          const i = (y * (cols + 1) + x) * 4;
+          const d = data[i] / 255;
+          const centeredDepth = (d - 0.48);
+          const px = ((x / cols) - 0.5) * aspect * 2.0;
+          const py = (0.5 - (y / rows)) * 2.0;
+          positions.push(px, py, centeredDepth);
+          uvs.push(x / cols, 1 - y / rows);
+        }
+      }
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const a = y * (cols + 1) + x;
+          const b = a + 1;
+          const c = a + cols + 1;
+          const d = c + 1;
+          indices.push(a, c, b, b, c, d);
+        }
+      }
+
+      indexCount = indices.length;
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    }
+
+    function mat4Identity() {
+      return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+    }
+
+    function multiply(a, b) {
+      const out = new Float32Array(16);
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          out[c * 4 + r] =
+            a[0 * 4 + r] * b[c * 4 + 0] +
+            a[1 * 4 + r] * b[c * 4 + 1] +
+            a[2 * 4 + r] * b[c * 4 + 2] +
+            a[3 * 4 + r] * b[c * 4 + 3];
+        }
+      }
+      return out;
+    }
+
+    function perspective(fovy, aspect, near, far) {
+      const f = 1 / Math.tan(fovy / 2);
+      const nf = 1 / (near - far);
+      return new Float32Array([
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, (far + near) * nf, -1,
+        0, 0, (2 * far * near) * nf, 0
+      ]);
+    }
+
+    function translate(z) {
+      return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,z,1]);
+    }
+
+    function rotateX(a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return new Float32Array([1,0,0,0, 0,c,s,0, 0,-s,c,0, 0,0,0,1]);
+    }
+
+    function rotateY(a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return new Float32Array([c,0,-s,0, 0,1,0,0, s,0,c,0, 0,0,0,1]);
+    }
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.floor(canvas.clientWidth * dpr);
+      const h = Math.floor(canvas.clientHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    function render(now) {
+      resize();
+      const t = (now - state.start) / 1000;
+      if (state.auto && now > state.manualUntil) {
+        state.targetX = Math.sin(t * 0.42) * 0.42;
+        state.targetY = Math.cos(t * 0.33) * 0.22;
+      }
+      state.pointerX += (state.targetX - state.pointerX) * 0.055;
+      state.pointerY += (state.targetY - state.pointerY) * 0.055;
+
+      gl.clearColor(0.06, 0.06, 0.06, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.DEPTH_TEST);
+      gl.useProgram(program);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.uniform1i(uImage, 0);
+      gl.uniform1i(uDepthMap, 1);
+      gl.uniform2f(uTexelSize, 1 / CONFIG.width, 1 / CONFIG.height);
+
+      const aspect = canvas.width / canvas.height;
+      const matrix = multiply(
+        perspective((35 / state.perspective) * Math.PI / 180, aspect, 0.01, 20),
+        multiply(
+          translate(-3.15),
+          multiply(rotateX(state.pointerY * 0.045), rotateY(state.pointerX * -0.075))
+        )
+      );
+
+      gl.uniformMatrix4fv(uMatrix, false, matrix);
+      gl.uniform1f(uShiftX, state.pointerX * state.motion * 0.13);
+      gl.uniform1f(uShiftY, state.pointerY * state.motion * 0.10);
+      gl.uniform1f(uDepthScale, state.depthScale);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.enableVertexAttribArray(aPosition);
+      gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+      gl.enableVertexAttribArray(aUv);
+      gl.vertexAttribPointer(aUv, 2, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+      gl.drawElements(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0);
+      requestAnimationFrame(render);
+    }
+
+    function clamp(value, minimum, maximum) {
+      return Math.max(minimum, Math.min(maximum, value));
+    }
+
+    function setManualView(x, y) {
+      state.targetX = clamp(x, -0.5, 0.5);
+      state.targetY = clamp(y, -0.275, 0.275);
+      state.manualUntil = performance.now() + 2800;
+    }
+
+    function setPointer(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      setManualView(
+        ((clientX - rect.left) / rect.width - 0.5) * 1.0,
+        ((clientY - rect.top) / rect.height - 0.5) * -0.55
+      );
+    }
+
+    function handleOrientation(event) {
+      if (!Number.isFinite(event.beta) || !Number.isFinite(event.gamma)) return;
+      if (!state.orientationBase) {
+        state.orientationBase = { beta: event.beta, gamma: event.gamma };
+        state.orientationX = 0;
+        state.orientationY = 0;
+        setManualView(0, 0);
+        return;
+      }
+      const x = clamp((event.gamma - state.orientationBase.gamma) / 24 * 0.5, -0.5, 0.5);
+      const y = clamp((event.beta - state.orientationBase.beta) / 18 * -0.275, -0.275, 0.275);
+      const moved = Math.abs(x - state.orientationX) > 0.008 || Math.abs(y - state.orientationY) > 0.008;
+      state.orientationX = x;
+      state.orientationY = y;
+      if (moved) setManualView(x, y);
+    }
+
+    function enableOrientation() {
+      if (state.orientationEnabled) return;
+      state.orientationEnabled = true;
+      window.addEventListener('deviceorientation', handleOrientation, true);
+    }
+
+    async function requestOrientationPermission() {
+      const Orientation = window.DeviceOrientationEvent;
+      if (!Orientation) return;
+      if (typeof Orientation.requestPermission === 'function') {
+        try {
+          if (await Orientation.requestPermission() === 'granted') enableOrientation();
+        } catch (_) {
+          // Pointer interaction remains available when orientation permission is denied.
+        }
+      } else {
+        enableOrientation();
+      }
+    }
+
+    canvas.addEventListener('pointermove', event => setPointer(event.clientX, event.clientY));
+    canvas.addEventListener('pointerdown', event => {
+      setPointer(event.clientX, event.clientY);
+      requestOrientationPermission();
+    });
+    window.addEventListener('orientationchange', () => { state.orientationBase = null; });
+    window.addEventListener('resize', resize);
+
+    if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission !== 'function') {
+      enableOrientation();
+    }
+
+    window.__spatialDebug = {
+      setView(x, y) {
+        setManualView(x, y);
+        state.pointerX = state.targetX;
+        state.pointerY = state.targetY;
+      },
+      injectOrientation(beta, gamma) { handleOrientation({ beta, gamma }); },
+      getState() { return { ...state, indexCount }; }
+    };
+
+    Promise.all([loadImage(CONFIG.image), loadImage(CONFIG.depth)]).then(([image, depth]) => {
+      createTexture(image, 0);
+      createTexture(depth, 1);
+      buildMesh(depth);
+      requestAnimationFrame(render);
+    });
+  </script>
+</body>
+</html>

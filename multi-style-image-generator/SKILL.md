@@ -1,6 +1,6 @@
 ---
 name: multi-style-image-generator
-description: Use when the user asks to generate images, videos, spatial photo previews, or prompts for game-inspired, animation-like, fantasy, xianxia, occult, pixel, creature-adventure, uploaded-photo stylization, real-place stylization, UI/HUD screenshots, 360 equirectangular panorama images, depth-map parallax previews, or BigModel/CogVideoX video generation in Codex. Triggers include 出图、生成图、写提示词、生成视频、动态效果、视频模式、动起来、CogVideoX、空间照片、空间感、空间位移、视差预览、depth map、深度图、上传图片、用我的脸、参考照片、360 度全景图、360 度环景照、原神风格、黑神话风格、修仙风格、诡秘之主风格、宝可梦风格、星露谷风格、潜水员戴夫风格。
+description: Use when the user asks to generate images, videos, spatial photo previews, or prompts for game-inspired, animation-like, fantasy, xianxia, occult, pixel, creature-adventure, uploaded-photo stylization, real-place stylization, UI/HUD screenshots, 360 equirectangular panorama images, depth-map parallax previews, or BigModel/CogVideoX video generation in Codex. Triggers include 出图、生成图、写提示词、生成视频、动态效果、视频模式、动起来、CogVideoX、空间景深图、空间照片、景深交互、空间感、空间位移、视差预览、depth map、深度图、上传图片、用我的脸、参考照片、360 度全景图、360 度环景照、原神风格、黑神话风格、修仙风格、诡秘之主风格、宝可梦风格、星露谷风格、潜水员戴夫风格。
 ---
 
 # 多风格图片生成
@@ -11,7 +11,7 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 
 写提示词或调用图像生成工具前，先读 `references/game-visual-styles.md`，拿风格选择、视觉规范、UI 规则、真实地点转译和禁用项。请求包含人物照片、身份参考或带人物的 360° 全景图时，还必须读 `references/portrait-panorama-qa.md`，使用其中的提示词模块和交付质检门槛。
 
-需要 Pillow 或 NumPy 的脚本必须通过 `scripts/run_with_deps.py` 调用。首次运行允许启动器在 Skill 目录创建 `.venv` 并自动安装 `requirements.txt`；不要改用全局 `pip`、`sudo` 或系统包管理器。如果安装失败，原样报告错误和失败阶段，不要静默绕过启动器。
+需要 Pillow、NumPy、PyTorch 或 Transformers 的脚本必须通过 `scripts/run_with_deps.py` 调用。首次运行允许启动器在正式 Skill 目录创建 `.venv`、安装 `requirements.txt` 并把模型复用到 Hugging Face 缓存；不要改用全局 `pip`、`sudo` 或系统包管理器。如果安装或真实深度推理失败，原样报告错误、backend 和失败阶段，不得静默改用启发式深度。
 
 ## 功能介绍模式
 
@@ -40,7 +40,7 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 - **直接出图**：用户说“生成图、出图、产出一个图、做一张、画一张、直接生成”等，先内部组装最终生图 prompt，然后调用可用的图像生成工具。不要只返回提示词。
 - **动态视频模式**：用户说“生成视频、动态效果、视频模式、动起来、做成视频、CogVideoX”等，先按目标风格组装视频 prompt，再运行 `scripts/create_bigmodel_video.py` 调用 BigModel 视频生成 API。视频默认 5 秒，只接受 5 秒或 10 秒。这个模式只生成视频，不改动原来的图片、360° 全景 HTML 或动态增强全景 HTML 流程。
 - **360° 全景图生视频模式**：用户说“360 全景视频、360 环景视频、360 图生视频、环景图动起来”等，先生成 2:1 等距柱状投影全景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后运行 `scripts/create_panorama_video_viewer.py <video.mp4>` 生成 360° 全景视频预览 HTML。该 HTML 会等待首帧加载、保留点击播放兜底，并强制循环播放；不要只把普通 16:9 视频塞进 360° 全景预览。
-- **空间照片预览模式**：用户说“空间照片、空间感、空间位移、视差预览、depth map、深度图、类似苹果空间照片”等，使用 `scripts/run_with_deps.py create_spatial_preview.py` 生成本地 HTML。该模式用于已有普通图片，不替代普通出图、360° 全景预览或动态增强全景预览。
+- **空间照片预览模式**：用户说“空间景深图、空间照片、景深交互、空间感、空间位移、视差预览、depth map、深度图、类似苹果空间照片”等，使用 `scripts/run_with_deps.py create_spatial_preview.py` 一次生成真实 raw depth、稳定 depth PNG 和本地 HTML。该模式用于已有普通图片，不重新生成底图，也不替代普通出图或 360° 全景预览。
 - **只写提示词**：用户明确说“写提示词、不用出图、prompt、给我提示词”等，只返回最终提示词代码块。
 - **不明确**：用户说“做一个/来一个/生成一个”默认直接出图；用户说“写一份/给我一段”默认只写提示词。
 
@@ -80,28 +80,32 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 
 ## 空间照片预览模式
 
-空间照片预览使用已有图片和深度图生成本地 HTML。统一入口是：
+用户提供或刚生成一张图片并要求“空间景深图、空间照片、景深交互”时，直接运行统一入口，不询问参数：
 
 ```bash
 python3 scripts/run_with_deps.py create_spatial_preview.py \
   <image-path> \
-  --depth <optional-depth-map.png> \
-  --spatial-mode displacement \
-  --output <optional-output.html>
+  --out-dir <output-directory>
 ```
 
-用 `--spatial-mode` 区分两种形式：
+默认 `immersive` preset 必须保持以下交付契约：
 
-- `--spatial-mode displacement`：第二种形式，默认推荐。用全屏 WebGL shader 根据深度图做轻微空间位移，效果像苹果空间照片/空间视差，不做网格 3D，不强调透视缩放。适合用户说“新版空间照片预览、第二种、空间位移、不要假 3D、不要点云、不要网格”。
-- `--spatial-mode mesh`：第一种形式。用深度图生成细分网格，再用相机横移和透视矩阵渲染。空间感更强，但更容易出现拉伸、边缘变形或“假 3D”感。适合用户明确说“深度网格、mesh、3D 空间、第一种形式”。
+- 使用 `depth-anything-v2-small` 真实模型推理 raw depth，再输出稳定化 depth；Apple Depth Pro 只在用户显式要求 `--depth-backend apple-depth-pro` 且已安装时使用。
+- 使用单层、单次 `gl.drawElements` 的 depth mesh；不得自动选择双层人物蒙版、前景抠图、补洞纹理或卡片分层。
+- 使用 `depthScale=1.80`、`motion=1.40`、`perspective=1.15`；自动巡游 X/Y 振幅为 `0.42/0.22`。
+- 同时支持鼠标、触摸与 `deviceorientation`；手动输入后平滑回到自动巡游。
+- 不生成 HUD、滑杆或按钮。
+- 使用真实深度轻度虚化远景：`1-smoothstep(0.14,0.30,depth)`、五点采样半径 `2.25px`、混合强度 `0.52`，保持人物和近景清晰。
+- 在 HTML 中内嵌 RGB 与稳定 depth，保持原图宽高比，允许直接 `file://` 打开；最终至少交付稳定 depth PNG 与 HTML。
 
-规则：
+深度输入和兼容模式：
 
-- 如果用户没有指定，默认用 `displacement`。
-- 如果有真实 depth map，传 `--depth <depth-map>`；如果没有 depth map，脚本会生成启发式深度图，只适合快速预览。
-- 最终回复给出生成的 depth map 和 HTML 链接；如果在 Codex 桌面环境中，可以直接打开 HTML。
-- 用户界面命名避免使用“透视”；滑块名称优先用“空间位移、空间感、移动幅度”等。
-- 不要把空间照片预览和 360° 全景预览混用：360° 全景图用 `create_panorama_viewer.py` 或 `create_dynamic_panorama_viewer.py`，空间照片用 `create_spatial_preview.py`。
+- 已有稳定深度图使用 `--depth <stable.png>`；已有模型原始深度使用 `--raw-depth <raw.png>`，不得混淆两者。
+- 只有用户明确接受非模型预览时才使用 `--depth-backend heuristic`。结果必须标记 `heuristic-fallback`，不得称为 Depth Anything V2 或真实模型深度。
+- `--spatial-mode displacement` 只作为显式兼容模式；`--spatial-mode mesh` 是默认。`--blur`、`--interaction`、`--depth-scale`、`--motion` 等参数只在用户明确要求偏离 v18 时调整。
+- 真实 backend 不可用时停止并准确报告；不要捕获错误后静默降级。
+- 最终回复给出 `raw_depth`（本次推理时）、`stable_depth` 和 `html` 路径，并准确说明 `depth_provenance`。
+- 不要把空间照片与 360° 全景预览混用。
 
 ## 动态视频模式
 

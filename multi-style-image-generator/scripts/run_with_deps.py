@@ -17,7 +17,9 @@ ALLOWED_TARGETS = {
     "create_spatial_preview.py",
     "create_spatial_photo_viewer.py",
     "create_spatial_photo_depth_viewer.py",
+    "infer_depth_anything_v2.py",
     "normalize_equirectangular_aspect.py",
+    "stabilize_depth_map.py",
 }
 
 
@@ -62,7 +64,14 @@ def environment_is_current(
         return False
 
     try:
-        runner([str(venv_python), "-c", "import PIL, numpy"], check=True)
+        runner(
+            [
+                str(venv_python),
+                "-c",
+                "import PIL, numpy, torch, transformers, safetensors, huggingface_hub",
+            ],
+            check=True,
+        )
     except (subprocess.CalledProcessError, OSError):
         return False
     return True
