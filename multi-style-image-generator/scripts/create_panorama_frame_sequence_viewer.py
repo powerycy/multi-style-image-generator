@@ -34,7 +34,7 @@ def build_html(frame_paths: list[Path], fps: float, title: str) -> str:
 </head>
 <body>
   <canvas id="view"></canvas>
-  <div class="hud">360 环景动画预览<br>拖拽查看，滚轮缩放<br><button id="toggle">暂停</button></div>
+  <div class="hud">360° 全景动画预览<br>拖拽查看，滚轮缩放<br><button id="toggle">暂停</button></div>
   <div class="status" id="status">正在加载帧...</div>
 <script>
 const frameUrls = [

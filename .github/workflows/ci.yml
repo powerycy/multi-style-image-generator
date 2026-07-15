@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify executable script modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad_modes="$(
+            git ls-files -s 'multi-style-image-generator/scripts/*.py' |
+              awk '$1 != "100755"'
+          )"
+          if [[ -n "$bad_modes" ]]; then
+            echo "Python scripts must use executable Git mode 100755:" >&2
+            printf '%s\n' "$bad_modes" >&2
+            exit 1
+          fi
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: multi-style-image-generator/requirements.txt
+      - name: Install lightweight test dependencies
+        run: python -m pip install "Pillow>=10,<13" "numpy>=1.26,<3"
+      - name: Compile scripts
+        run: python -m compileall -q multi-style-image-generator/scripts
+      - name: Run repository tests
+        run: python -m unittest discover -s tests -v
+      - name: Run spatial depth tests
+        run: python -m unittest discover -s multi-style-image-generator/tests -v
+      - name: Validate evaluations
+        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 15"
+      - name: Check video help
+        run: python multi-style-image-generator/scripts/create_bigmodel_video.py --help
+      - name: Check panorama help
+        run: python multi-style-image-generator/scripts/create_panorama_viewer.py --help
+      - name: Check dependency launcher help
+        run: python multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py --help

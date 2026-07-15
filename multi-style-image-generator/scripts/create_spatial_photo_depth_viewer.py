@@ -1,441 +1,150 @@
 #!/usr/bin/env python3
-"""Create a lightweight Apple-style spatial photo viewer from image + depth."""
+"""Build the accepted v18 single-mesh spatial-photo viewer."""
 
 from __future__ import annotations
 
 import argparse
 import base64
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image
 
 
+TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "spatial-v18-template.html"
+
+
+@dataclass(frozen=True)
+class ViewerOptions:
+    depth_scale: float = 1.80
+    motion: float = 1.40
+    perspective: float = 1.15
+    auto_x: float = 0.42
+    auto_y: float = 0.22
+    blur_near: float = 0.14
+    blur_far: float = 0.30
+    blur_radius: float = 2.25
+    blur_strength: float = 0.52
+    blur: str = "depth"
+    interaction: str = "mixed"
+    provenance: str = "supplied-depth"
+
+
 def data_uri(path: Path) -> str:
-    mime = "image/png"
-    if path.suffix.lower() in {".jpg", ".jpeg"}:
-        mime = "image/jpeg"
-    payload = base64.b64encode(path.read_bytes()).decode("ascii")
-    return f"data:{mime};base64,{payload}"
+    mime = "image/jpeg" if path.suffix.lower() in {".jpg", ".jpeg"} else "image/png"
+    return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode('ascii')}"
 
 
-def write_viewer(image_path: Path, depth_path: Path, output_path: Path, grid: int) -> None:
+def _number(value: float) -> str:
+    return f"{value:.2f}"
+
+
+def build_document(
+    image_path: Path,
+    depth_path: Path,
+    grid: int = 150,
+    options: ViewerOptions = ViewerOptions(),
+) -> str:
     with Image.open(image_path) as image:
         width, height = image.size
+    with Image.open(depth_path) as depth:
+        if depth.size != (width, height):
+            raise ValueError(
+                f"depth dimensions {depth.size} do not match RGB dimensions {(width, height)}"
+            )
 
     aspect = width / height
-    cols = grid
-    rows = max(40, round(grid / aspect))
     config = {
         "image": data_uri(image_path),
         "depth": data_uri(depth_path),
         "width": width,
         "height": height,
-        "cols": cols,
-        "rows": rows,
+        "cols": grid,
+        "rows": max(40, round(grid / aspect)),
+        "depthProvenance": options.provenance,
+        "interaction": options.interaction,
     }
-
-    template = r"""<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Spatial Photo Preview</title>
-  <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #101010;
-      color: #f7f4ed;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+    document = TEMPLATE.read_text(encoding="utf-8")
+    replacements = {
+        "__CONFIG__": json.dumps(config, ensure_ascii=False),
+        "1.77683316": f"{aspect:.8f}",
+        "depthScale: 1.80": f"depthScale: {_number(options.depth_scale)}",
+        "motion: 1.40": f"motion: {_number(options.motion)}",
+        "perspective: 1.15": f"perspective: {_number(options.perspective)}",
+        "Math.sin(t * 0.42) * 0.42": f"Math.sin(t * 0.42) * {_number(options.auto_x)}",
+        "Math.cos(t * 0.33) * 0.22": f"Math.cos(t * 0.33) * {_number(options.auto_y)}",
+        "smoothstep(0.14, 0.30, depthValue)": (
+            f"smoothstep({_number(options.blur_near)}, {_number(options.blur_far)}, depthValue)"
+        ),
+        "uTexelSize * 2.25": f"uTexelSize * {_number(options.blur_radius)}",
+        "farMask * 0.52": f"farMask * {_number(options.blur_strength)}",
     }
-    .stage {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at 50% 40%, rgba(255,255,255,.09), transparent 46%),
-        #111;
-    }
-    canvas {
-      width: min(100vw, calc(100vh * __ASPECT__));
-      height: min(100vh, calc(100vw / __ASPECT__));
-      display: block;
-      background: #161616;
-    }
-    .hud {
-      position: fixed;
-      left: 16px;
-      top: 14px;
-      max-width: min(420px, calc(100vw - 32px));
-      padding: 12px 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 8px;
-      background: rgba(8,8,8,.52);
-      backdrop-filter: blur(18px);
-      box-sizing: border-box;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .hud strong {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 14px;
-    }
-    .controls {
-      position: fixed;
-      left: 50%;
-      bottom: 16px;
-      transform: translateX(-50%);
-      width: min(760px, calc(100vw - 32px));
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
-      gap: 12px;
-      align-items: end;
-      padding: 12px 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 8px;
-      background: rgba(8,8,8,.54);
-      backdrop-filter: blur(18px);
-      box-sizing: border-box;
-      font-size: 12px;
-    }
-    label {
-      display: grid;
-      gap: 7px;
-      color: rgba(255,255,255,.82);
-    }
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 38px;
-      gap: 8px;
-      align-items: center;
-    }
-    input[type="range"] {
-      width: 100%;
-      accent-color: #f2c46d;
-    }
-    button {
-      height: 34px;
-      padding: 0 14px;
-      border: 0;
-      border-radius: 7px;
-      color: #111;
-      background: #f2c46d;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    @media (max-width: 760px) {
-      .controls {
-        grid-template-columns: 1fr;
-        bottom: 10px;
-      }
-      .hud {
-        font-size: 12px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="stage"><canvas id="view"></canvas></div>
-  <div class="hud">
-    <strong>空间照片预览</strong>
-    使用 Depth Anything V2 的深度图做轻微视差。移动鼠标或触控板会看到前景和背景产生错位，自动播放时会有很小幅度的摆动。
-  </div>
-  <div class="controls">
-    <label>空间感
-      <div class="row"><input id="depthScale" type="range" min="0" max="1.8" step="0.01" value="0.62"><span id="depthText">0.62</span></div>
-    </label>
-    <label>移动幅度
-      <div class="row"><input id="motion" type="range" min="0" max="1.4" step="0.01" value="0.56"><span id="motionText">0.56</span></div>
-    </label>
-    <label>空间位移
-      <div class="row"><input id="perspective" type="range" min="0.4" max="2.2" step="0.01" value="1.15"><span id="perspectiveText">1.15</span></div>
-    </label>
-    <button id="pause">暂停</button>
-  </div>
-  <script>
-    const CONFIG = __CONFIG__;
-    const canvas = document.getElementById('view');
-    const gl = canvas.getContext('webgl', { antialias: true, preserveDrawingBuffer: true });
-    if (!gl) document.body.innerHTML = '<p style="padding:20px">当前浏览器不支持 WebGL。</p>';
-
-    const vertexSource = `
-      attribute vec3 aPosition;
-      attribute vec2 aUv;
-      uniform mat4 uMatrix;
-      uniform float uDepthScale;
-      varying vec2 vUv;
-      void main() {
-        float z = aPosition.z * uDepthScale * 0.42;
-        vec3 p = vec3(aPosition.xy, z);
-        gl_Position = uMatrix * vec4(p, 1.0);
-        vUv = aUv;
-      }
-    `;
-    const fragmentSource = `
-      precision mediump float;
-      uniform sampler2D uImage;
-      varying vec2 vUv;
-      void main() {
-        vec2 uv = clamp(vUv, vec2(0.001), vec2(0.999));
-        gl_FragColor = texture2D(uImage, uv);
-      }
-    `;
-
-    const state = {
-      pointerX: 0,
-      pointerY: 0,
-      targetX: 0,
-      targetY: 0,
-      depthScale: 0.62,
-      motion: 0.56,
-      perspective: 1.15,
-      paused: false,
-      start: performance.now(),
-    };
-
-    function compile(type, source) {
-      const shader = gl.createShader(type);
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
-      return shader;
-    }
-
-    const program = gl.createProgram();
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSource));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
-    gl.useProgram(program);
-
-    const positionBuffer = gl.createBuffer();
-    const uvBuffer = gl.createBuffer();
-    const indexBuffer = gl.createBuffer();
-    const aPosition = gl.getAttribLocation(program, 'aPosition');
-    const aUv = gl.getAttribLocation(program, 'aUv');
-    const uMatrix = gl.getUniformLocation(program, 'uMatrix');
-    const uDepthScale = gl.getUniformLocation(program, 'uDepthScale');
-    const uImage = gl.getUniformLocation(program, 'uImage');
-    let indexCount = 0;
-
-    function loadImage(src) {
-      return new Promise((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = reject;
-        image.src = src;
-      });
-    }
-
-    function createTexture(image) {
-      const texture = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      return texture;
-    }
-
-    function buildMesh(depthImage) {
-      const cols = CONFIG.cols;
-      const rows = CONFIG.rows;
-      const depthCanvas = document.createElement('canvas');
-      depthCanvas.width = cols + 1;
-      depthCanvas.height = rows + 1;
-      const ctx = depthCanvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(depthImage, 0, 0, depthCanvas.width, depthCanvas.height);
-      const data = ctx.getImageData(0, 0, depthCanvas.width, depthCanvas.height).data;
-      const aspect = CONFIG.width / CONFIG.height;
-      const positions = [];
-      const uvs = [];
-      const indices = [];
-
-      for (let y = 0; y <= rows; y++) {
-        for (let x = 0; x <= cols; x++) {
-          const i = (y * (cols + 1) + x) * 4;
-          const d = data[i] / 255;
-          const centeredDepth = (d - 0.48);
-          const px = ((x / cols) - 0.5) * aspect * 2.0;
-          const py = (0.5 - (y / rows)) * 2.0;
-          positions.push(px, py, centeredDepth);
-          uvs.push(x / cols, 1 - y / rows);
-        }
-      }
-
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          const a = y * (cols + 1) + x;
-          const b = a + 1;
-          const c = a + cols + 1;
-          const d = c + 1;
-          indices.push(a, c, b, b, c, d);
-        }
-      }
-
-      indexCount = indices.length;
-      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-      gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uvs), gl.STATIC_DRAW);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-    }
-
-    function mat4Identity() {
-      return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
-    }
-
-    function multiply(a, b) {
-      const out = new Float32Array(16);
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
-          out[c * 4 + r] =
-            a[0 * 4 + r] * b[c * 4 + 0] +
-            a[1 * 4 + r] * b[c * 4 + 1] +
-            a[2 * 4 + r] * b[c * 4 + 2] +
-            a[3 * 4 + r] * b[c * 4 + 3];
-        }
-      }
-      return out;
-    }
-
-    function perspective(fovy, aspect, near, far) {
-      const f = 1 / Math.tan(fovy / 2);
-      const nf = 1 / (near - far);
-      return new Float32Array([
-        f / aspect, 0, 0, 0,
-        0, f, 0, 0,
-        0, 0, (far + near) * nf, -1,
-        0, 0, (2 * far * near) * nf, 0
-      ]);
-    }
-
-    function translate3(x, y, z) {
-      return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, x,y,z,1]);
-    }
-
-    function rotateX(a) {
-      const c = Math.cos(a), s = Math.sin(a);
-      return new Float32Array([1,0,0,0, 0,c,s,0, 0,-s,c,0, 0,0,0,1]);
-    }
-
-    function rotateY(a) {
-      const c = Math.cos(a), s = Math.sin(a);
-      return new Float32Array([c,0,-s,0, 0,1,0,0, s,0,c,0, 0,0,0,1]);
-    }
-
-    function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = Math.floor(canvas.clientWidth * dpr);
-      const h = Math.floor(canvas.clientHeight * dpr);
-      if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w;
-        canvas.height = h;
-      }
-      gl.viewport(0, 0, canvas.width, canvas.height);
-    }
-
-    function render(now) {
-      resize();
-      const t = (now - state.start) / 1000;
-      if (!state.paused) {
-        state.targetX = Math.sin(t * 0.42) * 0.36;
-        state.targetY = Math.cos(t * 0.33) * 0.18;
-      }
-      state.pointerX += (state.targetX - state.pointerX) * 0.055;
-      state.pointerY += (state.targetY - state.pointerY) * 0.055;
-
-      gl.clearColor(0.06, 0.06, 0.06, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      gl.enable(gl.DEPTH_TEST);
-      gl.useProgram(program);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.uniform1i(uImage, 0);
-
-      const aspect = canvas.width / canvas.height;
-      const cameraX = state.pointerX * state.motion * 0.24;
-      const cameraY = state.pointerY * state.motion * 0.14;
-      const matrix = multiply(
-        perspective((38 / state.perspective) * Math.PI / 180, aspect, 0.01, 20),
-        multiply(
-          translate3(-cameraX, -cameraY, -3.25),
-          multiply(rotateX(state.pointerY * 0.018), rotateY(state.pointerX * -0.028))
+    for old, new in replacements.items():
+        if old not in document:
+            raise ValueError(f"v18 template contract missing: {old}")
+        document = document.replace(old, new)
+    if options.blur == "none":
+        document = document.replace(
+            f"float farMask = 1.0 - smoothstep({_number(options.blur_near)}, {_number(options.blur_far)}, depthValue);",
+            "float farMask = 0.0;",
         )
-      );
+    if options.interaction == "auto":
+        document = document.replace("canvas.addEventListener('pointermove'", "false && canvas.addEventListener('pointermove'")
+        document = document.replace("canvas.addEventListener('pointerdown'", "false && canvas.addEventListener('pointerdown'")
+        document = document.replace("if (window.DeviceOrientationEvent", "if (false && window.DeviceOrientationEvent")
+    elif options.interaction == "pointer":
+        document = document.replace("if (window.DeviceOrientationEvent", "if (false && window.DeviceOrientationEvent")
+    return document
 
-      gl.uniformMatrix4fv(uMatrix, false, matrix);
-      gl.uniform1f(uDepthScale, state.depthScale);
 
-      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-      gl.enableVertexAttribArray(aPosition);
-      gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-      gl.enableVertexAttribArray(aUv);
-      gl.vertexAttribPointer(aUv, 2, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-      gl.drawElements(gl.TRIANGLES, indexCount, gl.UNSIGNED_SHORT, 0);
-      requestAnimationFrame(render);
-    }
-
-    function bindSlider(id, key, textId) {
-      const input = document.getElementById(id);
-      const text = document.getElementById(textId);
-      input.addEventListener('input', () => {
-        state[key] = Number(input.value);
-        text.textContent = Number(input.value).toFixed(2);
-      });
-    }
-    bindSlider('depthScale', 'depthScale', 'depthText');
-    bindSlider('motion', 'motion', 'motionText');
-    bindSlider('perspective', 'perspective', 'perspectiveText');
-    document.getElementById('pause').addEventListener('click', e => {
-      state.paused = !state.paused;
-      e.currentTarget.textContent = state.paused ? '播放' : '暂停';
-    });
-
-    window.addEventListener('pointermove', e => {
-      if (!state.paused) return;
-      state.targetX = ((e.clientX / window.innerWidth) - 0.5) * 1.0;
-      state.targetY = ((e.clientY / window.innerHeight) - 0.5) * -0.55;
-    });
-    window.addEventListener('resize', resize);
-
-    Promise.all([loadImage(CONFIG.image), loadImage(CONFIG.depth)]).then(([image, depth]) => {
-      createTexture(image);
-      buildMesh(depth);
-      requestAnimationFrame(render);
-    });
-  </script>
-</body>
-</html>
-"""
-    document = (
-        template
-        .replace("__CONFIG__", json.dumps(config))
-        .replace("__ASPECT__", f"{aspect:.8f}")
-    )
+def write_viewer(
+    image_path: Path,
+    depth_path: Path,
+    output_path: Path,
+    grid: int = 150,
+    options: ViewerOptions = ViewerOptions(),
+) -> None:
+    document = build_document(image_path, depth_path, grid, options)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(document, encoding="utf-8")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image", type=Path)
     parser.add_argument("depth", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--grid", type=int, default=150)
+    parser.add_argument("--depth-scale", type=float, default=1.80)
+    parser.add_argument("--motion", type=float, default=1.40)
+    parser.add_argument("--perspective", type=float, default=1.15)
+    parser.add_argument("--auto-x", type=float, default=0.42)
+    parser.add_argument("--auto-y", type=float, default=0.22)
+    parser.add_argument("--blur-near", type=float, default=0.14)
+    parser.add_argument("--blur-far", type=float, default=0.30)
+    parser.add_argument("--blur-radius", type=float, default=2.25)
+    parser.add_argument("--blur-strength", type=float, default=0.52)
+    parser.add_argument("--blur", choices=("depth", "none"), default="depth")
+    parser.add_argument("--interaction", choices=("mixed", "pointer", "auto"), default="mixed")
+    parser.add_argument("--provenance", default="supplied-depth")
     args = parser.parse_args()
-    write_viewer(args.image, args.depth, args.output, args.grid)
-    print(f"Viewer: {args.output}")
+    options = ViewerOptions(
+        depth_scale=args.depth_scale,
+        motion=args.motion,
+        perspective=args.perspective,
+        auto_x=args.auto_x,
+        auto_y=args.auto_y,
+        blur_near=args.blur_near,
+        blur_far=args.blur_far,
+        blur_radius=args.blur_radius,
+        blur_strength=args.blur_strength,
+        blur=args.blur,
+        interaction=args.interaction,
+        provenance=args.provenance,
+    )
+    write_viewer(args.image.resolve(), args.depth.resolve(), args.output.resolve(), args.grid, options)
+    print(args.output.resolve())
 
 
 if __name__ == "__main__":

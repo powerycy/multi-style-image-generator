@@ -1,15 +1,26 @@
 ---
 name: multi-style-image-generator
-description: Use when the user asks to generate images, videos, spatial photo previews, or prompts for game-inspired, animation-like, fantasy, xianxia, occult, pixel, creature-adventure, uploaded-photo stylization, real-place stylization, UI/HUD screenshots, 360 equirectangular panorama images, depth-map parallax previews, or BigModel/CogVideoX video generation in Codex. Triggers include 出图、生成图、写提示词、生成视频、动态效果、视频模式、动起来、CogVideoX、空间照片、空间感、空间位移、视差预览、depth map、深度图、上传图片、用我的脸、参考照片、360 度环景照、原神风格、黑神话风格、修仙风格、诡秘之主风格、宝可梦风格、星露谷风格、潜水员戴夫风格。
+description: Use when the user asks to generate images, videos, spatial photo previews, or prompts for game-inspired, animation-like, fantasy, xianxia, occult, pixel, creature-adventure, uploaded-photo stylization, real-place stylization, UI/HUD screenshots, 360 equirectangular panorama images, depth-map parallax previews, or BigModel/CogVideoX video generation in Codex. Triggers include 出图、生成图、写提示词、生成视频、动态效果、视频模式、动起来、CogVideoX、空间景深图、空间照片、景深交互、空间感、空间位移、视差预览、depth map、深度图、上传图片、用我的脸、参考照片、360 度全景图、360 度环景照、原神风格、黑神话风格、修仙风格、诡秘之主风格、宝可梦风格、星露谷风格、潜水员戴夫风格。
 ---
 
 # 多风格图片生成
 
-用这个技能生成稳定的多风格视觉图片提示词，或在 Codex 中直接调用图像生成工具出图。重点是风格路由、主体可识别、画风统一、UI 模式控制和 360 环景预览。
+用这个技能生成稳定的多风格视觉图片提示词，或在 Codex 中直接调用图像生成工具出图。重点是风格路由、主体可识别、画风统一、UI 模式控制和 360° 全景预览。
 
 ## 自带依赖
 
-写提示词或调用图像生成工具前，先读 `references/game-visual-styles.md`，拿风格选择、视觉规范、UI 规则、真实地点转译和禁用项。
+写提示词或调用图像生成工具前，先读 `references/game-visual-styles.md`，拿风格选择、视觉规范、UI 规则、真实地点转译和禁用项。请求包含人物照片、身份参考或带人物的 360° 全景图时，还必须读 `references/portrait-panorama-qa.md`，使用其中的提示词模块和交付质检门槛。
+
+需要 Pillow、NumPy、PyTorch 或 Transformers 的脚本必须通过 `scripts/run_with_deps.py` 调用。首次运行允许启动器在正式 Skill 目录创建 `.venv`、安装 `requirements.txt` 并把模型复用到 Hugging Face 缓存；不要改用全局 `pip`、`sudo` 或系统包管理器。如果安装或真实深度推理失败，原样报告错误、backend 和失败阶段，不得静默改用启发式深度。
+
+## 功能介绍模式
+
+用户要求“介绍功能、怎么使用、支持什么、给示例，但不要出图”时，只介绍能力和示例，不调用图像、视频或预览工具。介绍必须遵守以下契约：
+
+- 标准名称使用“360° 全景图”；需要技术解释时写“360°×180° 等距柱状投影全景图”。“环景、环景照”只作为用户可能使用的触发别名，不作为功能标题。
+- 照片风格化默认介绍为“保留身份锚点，并将人物造型、动作和光照重新设计到目标世界观中”。只有用户明确要求保留原服装、原姿势或原道具时，才把这些作为保留项；不要自行举出具体服装、配饰或道具。
+- CogVideoX-3 视频默认 5 秒，只支持 5 秒或 10 秒。不要写“5–10 秒”、8 秒或其他连续时长。
+- 明确区分“只写提示词”和“直接出图”：前者只返回结构化提示词代码块，后者调用图像生成工具；用户只要求功能介绍时两者都不执行。
 
 ## 工作流
 
@@ -27,20 +38,22 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 再判断输出模式：
 
 - **直接出图**：用户说“生成图、出图、产出一个图、做一张、画一张、直接生成”等，先内部组装最终生图 prompt，然后调用可用的图像生成工具。不要只返回提示词。
-- **动态视频模式**：用户说“生成视频、动态效果、视频模式、动起来、做成视频、CogVideoX”等，先按目标风格组装视频 prompt，再运行 `scripts/create_bigmodel_video.py` 调用 BigModel 视频生成 API。这个模式只生成视频，不改动原来的图片、360 HTML 或动态增强 360 HTML 流程。
-- **360 图生视频模式**：用户说“360 环景视频、360 图生视频、环景图动起来”等，先生成 2:1 等距柱状环景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后运行 `scripts/create_panorama_video_viewer.py <video.mp4>` 生成 360 视频预览 HTML。该 HTML 会等待首帧加载、保留点击播放兜底，并强制循环播放；不要只把普通 16:9 视频塞进 360 预览。
-- **空间照片预览模式**：用户说“空间照片、空间感、空间位移、视差预览、depth map、深度图、类似苹果空间照片”等，使用 `scripts/create_spatial_preview.py` 生成本地 HTML。该模式用于已有普通图片，不替代普通出图、360 环景预览或动态增强 360 预览。
+- **动态视频模式**：用户说“生成视频、动态效果、视频模式、动起来、做成视频、CogVideoX”等，先按目标风格组装视频 prompt，再运行 `scripts/create_bigmodel_video.py` 调用 BigModel 视频生成 API。视频默认 5 秒，只接受 5 秒或 10 秒。这个模式只生成视频，不改动原来的图片、360° 全景 HTML 或动态增强全景 HTML 流程。
+- **360° 全景图生视频模式**：用户说“360 全景视频、360 环景视频、360 图生视频、环景图动起来”等，先生成 2:1 等距柱状投影全景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后运行 `scripts/create_panorama_video_viewer.py <video.mp4>` 生成 360° 全景视频预览 HTML。该 HTML 会等待首帧加载、保留点击播放兜底，并强制循环播放；不要只把普通 16:9 视频塞进 360° 全景预览。
+- **空间照片预览模式**：用户说“空间景深图、空间照片、景深交互、空间感、空间位移、视差预览、depth map、深度图、类似苹果空间照片”等，使用 `scripts/run_with_deps.py create_spatial_preview.py` 一次生成真实 raw depth、稳定 depth PNG 和本地 HTML。该模式用于已有普通图片，不重新生成底图，也不替代普通出图或 360° 全景预览。
 - **只写提示词**：用户明确说“写提示词、不用出图、prompt、给我提示词”等，只返回最终提示词代码块。
 - **不明确**：用户说“做一个/来一个/生成一个”默认直接出图；用户说“写一份/给我一段”默认只写提示词。
 
 再判断是否有上传图片或照片参考：
 
-- **上传图片做参考**：先给每张图分配角色，例如身份参考、场景参考、穿着/道具参考、构图参考或风格参考。不要把所有参考图混成同一个要求。
-- **人物可识别风格化**：用户说“用我的脸、能看出来是我、参考我的照片”等时，必须保留可识别身份特征，但不能把照片质感的人脸硬贴到目标风格背景里。最终直接出图 prompt 必须要求：整张图统一重绘成目标画风，人物、脸、衣服、道具、背景使用同一光照、边缘、材质和色彩风格。
-- **穿着和道具约束**：用户指定“墨镜戴上、保留帽子、保留黑外套、参考第一张衣服”等时，把这些当成硬约束逐条写进 prompt。照片里的品牌瓶、商标或可读包装文字应改成无品牌泛化道具，避免水印、乱码和侵权式标识。
-- **照片场景转译**：用户说“用第一个照片的场景”时，保留山、草地、街道、室内等主体空间关系，但要把场景整体转译进目标风格，而不是换一个风格背景再贴人。
-- **多风格批量**：同一人物生成多种风格时，每一张的 prompt 都要重复身份、穿着、姿态、参考图角色和“统一重绘，不要抠图/绿幕感/照片脸贴背景”的约束。不要只在第一张写。
-- **像素风降级**：星露谷、潜水员戴夫等像素风不能保留照片级五官。优先保留服装色块、帽子、墨镜、姿势、轮廓和笑容符号，同时明确整张图必须是统一像素网格。
+- **上传图片做参考**：参考图数量不固定。只依据用户当前说明或图片中实际可见内容，为每张图分配身份、场景、穿着/道具、构图或风格等角色；不要套用预设顺序，也不要把所有参考图混成同一个要求。无法可靠判断用途时，先询问用户。
+- **默认人物融合**：当用户提供人物照片并用于生成图片、360° 全景图或视频内容时，默认语义是“让同一个人自然进入目标世界”。保留脸型、五官关系、发型/发际线轮廓、体态和可识别气质等身份锚点；默认重设计衣着、鞋履、发饰、道具、动作、材质和光照，并安排符合场景叙事的姿势。只有用户明确要求保留原衣着、原发饰、原姿势、原道具或不要换造型时，才保留对应元素。禁止站立合影、旅游打卡姿势、现代装与幻想环境割裂或照片抠图贴背景。
+- **人物身份一致**：用户说“用我的脸、像我本人、保留我的脸、参考这张人物照片”，或把人物照片作为身份参考时，把可辨认为同一个人置于场景细节、特效和造型精致度之前；人脸可见时直接执行，人脸不可见、严重模糊或遮挡时再索取清晰人脸照。不得泛化成游戏角色脸、网红脸、不同年龄感或另一个人，也不得在没有质检证据时承诺“已保留本人脸”。
+- **人物提示词与质检**：生成 prompt 必须包含统一重绘、身份锚点、自然同向视线和世界观融合要求。出图后按 `references/portrait-panorama-qa.md`，在正常观看尺寸和实际交付场景中检查身份、双眼、表情、衣着动作、光照和构图；不要为了检查而过度放大远中景人物。达到用户明确创作目标且没有正常观看时可见的明显身份、眼神、融合、变形或可用性问题时直接交付；只有明显不可用时才重绘。
+- **既有素材衍生**：空间照片预览、360° 全景 HTML、动态增强全景，以及“让这张现有图片动起来”的图生视频，默认继承已有底图或源图，不得自行换脸、换装、改变发饰、姿势或环境。用户要求“先风格化，再制作预览或动画”时，先生成并质检融合后的底图，再进入衍生流程。
+- **照片场景转译**：用户明确指定某张图作为场景参考时，保留其中可见的主体空间关系，但要把场景整体转译进目标风格，而不是换一个风格背景再贴人。
+- **多风格批量**：同一人物生成多种风格时，每一张的 prompt 都要重复身份锚点、世界观融合、参考图角色和统一重绘约束；只有用户明确要求时才重复原服装、原姿势或原道具约束。不得自行增加风格数量。
+- **像素风降级**：星露谷、潜水员戴夫等像素风不能承诺照片级五官。优先保留脸型/发型轮廓、体态、主色和表情符号等身份锚点，并明确整张图必须使用统一像素网格；如模型无法达到严格像本人，如实说明只能保留相似气质。
 
 再判断界面模式：
 
@@ -51,13 +64,15 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 再判断视图模式：
 
 - **普通视图**：默认模式，按普通游戏截图、动画镜头或可游玩画面生成。
-- **360 度环景照模式**：用户说“360 度环景照、全景图、环景照、等距柱状投影、VR 全景”等时启用。最终提示词和直接出图 prompt 必须原样加入：`360 度等距柱状投影图像。` 并明确要求 `2:1 宽高比，例如 4096x2048 或 2048x1024，左右边缘无缝衔接。`
+- **360° 全景图模式**：用户说“360 度全景图、360 度环景照、全景图、环景照、等距柱状投影、VR 全景”等时启用。最终提示词和直接出图 prompt 必须原样加入：`360°×180° 等距柱状投影全景图。` 并明确要求 `2:1 宽高比，例如 4096x2048 或 2048x1024，左右边缘无缝衔接。`
 
-再判断是否需要环景预览：
+再判断是否需要 360° 全景预览：
 
-- **直接展示 360 效果**：360 度环景照模式 + 直接出图时，出图后尽量生成一个可交互 360 预览 HTML。若图像生成工具返回本地图片路径，直接使用该路径；若没有路径，运行 `scripts/extract_latest_image_from_session.py --out-dir output/imagegen --name <slug>`，尝试从当前 Codex session 解码图片落盘。该脚本会同时查找两类图片载荷：`data:image/...;base64,...` 形式的 data URI，以及 Codex image generation 事件中 `payload.result` 里的裸 PNG/JPEG/WebP/GIF base64。拿到图片文件后，先做 2:1 比例检查和规格化，再运行 `scripts/create_panorama_viewer.py <image-path> --embed-image` 用全屏 WebGL 方向采样方式预览等距柱状图，最终回复里给出 2:1 图片和本地 HTML 链接；在 Codex 桌面环境可用浏览器工具时，也可以直接打开该 HTML。
-- **动态增强 360 效果**：如果用户要求“动态、动起来、动态环景、灵气粒子、云雾流动、自动巡游”等，但没有明确要求真正的视频，优先保持 2:1 静态环景图不变，运行 `scripts/create_dynamic_panorama_viewer.py <2:1-image-path>` 生成动态增强版 HTML。该 HTML 用静态等距柱状图作为底图，并叠加自动巡游、轻微 FOV 呼吸、云雾层、灵气粒子和光晕；最终说明它不是视频，建筑和主体不会真实变形，只是实时特效增强。
-- **比例检查和 2:1 规格化**：360 度等距柱状图应接近 2:1。落盘后用 `file` 或图片库确认尺寸；如果内置图像工具返回 16:9、1:1 等非 2:1 图片，必须先运行 `scripts/normalize_equirectangular_aspect.py <image-path>` 生成 `<stem>-2x1.png`，再把这个 2:1 文件作为最终返回图片和 HTML 输入。规格化只能保证文件比例正确，不能把普通广角图变成几何上真实的 360 环景；如有明显非全景内容，最终回复要简短说明“已规格化为 2:1，但源图可能仍非严格无缝环景”。
+- **直接展示 360° 全景效果**：360° 全景图模式与直接出图组合时，先把生成结果视为质检候选，不立即交付 PNG 或 HTML。若图像生成工具返回本地图片路径，直接用于检查；若没有路径，运行 `scripts/extract_latest_image_from_session.py --out-dir output/imagegen --name <slug>`，尝试从当前 Codex session 解码图片落盘。该脚本会查找 data URI 和 image generation `payload.result` 中的裸 base64 图片。
+- **人物 360° 构图**：人物的大小、距离和位置根据用户意图和画面叙事自然决定，不使用固定米数或画面占比。用户说“把我放进场景”时，让人物在主要观看方向附近舒适可辨并自然融入；用户强调“我是主角、人物明显、脸清楚”时提高人物存在感；只有用户明确以环境为主时才适当缩小人物。人物避开顶部/底部极点与左右拼接缝；除非用户要求，不生成贴近观察点的海报式特写或合影姿势。
+- **人物全景质检门槛**：先检查候选图的身份、眼神、表情、世界观衣着和动作、人物存在感、左右连续性与空间关系；再运行 `scripts/create_panorama_viewer.py <2:1-image-path> --embed-image` 创建 QA 预览，并在 WebGL 中检查前、后、左、右及接缝附近多个朝向。达到用户明确目标且没有正常观看时可见的明显陌生脸、异常眼神、抠图割裂、人物严重变形、拼接断裂或空间不可用时，直接交付 PNG 与 HTML。不要仅因人物较远或无法进行人像级身份核验而降低整张图的交付判断；只有明显不可用时才重绘，自动重绘最多一次，不自动发起第二次重绘。
+- **动态增强 360° 全景效果**：如果用户要求“动态、动起来、动态环景、灵气粒子、云雾流动、自动巡游”等，但没有明确要求真正的视频，优先保持 2:1 静态全景图不变，运行 `scripts/create_dynamic_panorama_viewer.py <2:1-image-path>` 生成动态增强版 HTML。该 HTML 用静态等距柱状投影全景图作为底图，并叠加自动巡游、轻微 FOV 呼吸、云雾层、灵气粒子和光晕；最终说明它不是视频，建筑和主体不会真实变形，只是实时特效增强。
+- **比例检查和 2:1 规格化**：360° 等距柱状投影全景图应接近 2:1。落盘后用 `file` 或图片库确认尺寸；非 2:1 时运行 `scripts/run_with_deps.py normalize_equirectangular_aspect.py <image-path>` 生成 `<stem>-2x1.png`。规格化只修正文件比例；只有左右连续、空间关系合理且 WebGL 多朝向检查无明显断裂或变形时，才能称为可用的 360° 全景图，否则只说明“已规格化为 2:1”，不要把普通广角图说成严格全景图。
 - **提取排查**：如果脚本没有找到图片，但对话里确实刚生成了图，先在当前 session JSONL 中查真实图片头而不是只查 data URI：PNG 常见前缀是 `iVBORw0KGgo`，JPEG 常见前缀是 `/9j/`，WebP 常见前缀是 `UklGR`，GIF 常见前缀是 `R0lGOD`。若命中 `payload.result` 这类裸 base64 字段，可直接 base64 解码为图片；不要把文档里的 `data:image/...;base64,...` 占位文本当作真实图片。
 - **降级**：不要把“对话里能看到图片”等同于“session 里一定有可提取图片载荷”。如果既没有本地图片路径，也无法从 session 日志提取图片，就不要假装已创建交互预览。直接说明内置图像工具只展示了静态图，当前没有可落盘数据；如果用户要求保证落盘和 360 HTML，必须改走 CLI/API fallback，并按 `imagegen` 技能规则先确认该 fallback。
 
@@ -65,35 +80,39 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 
 ## 空间照片预览模式
 
-空间照片预览使用已有图片和深度图生成本地 HTML。统一入口是：
+用户提供或刚生成一张图片并要求“空间景深图、空间照片、景深交互”时，直接运行统一入口，不询问参数：
 
 ```bash
-python3 /Users/yuanchaoyi/.codex/skills/multi-style-image-generator/scripts/create_spatial_preview.py \
+python3 scripts/run_with_deps.py create_spatial_preview.py \
   <image-path> \
-  --depth <optional-depth-map.png> \
-  --spatial-mode displacement \
-  --output <optional-output.html>
+  --out-dir <output-directory>
 ```
 
-用 `--spatial-mode` 区分两种形式：
+默认 `immersive` preset 必须保持以下交付契约：
 
-- `--spatial-mode displacement`：第二种形式，默认推荐。用全屏 WebGL shader 根据深度图做轻微空间位移，效果像苹果空间照片/空间视差，不做网格 3D，不强调透视缩放。适合用户说“新版空间照片预览、第二种、空间位移、不要假 3D、不要点云、不要网格”。
-- `--spatial-mode mesh`：第一种形式。用深度图生成细分网格，再用相机横移和透视矩阵渲染。空间感更强，但更容易出现拉伸、边缘变形或“假 3D”感。适合用户明确说“深度网格、mesh、3D 空间、第一种形式”。
+- 使用 `depth-anything-v2-small` 真实模型推理 raw depth，再输出稳定化 depth；Apple Depth Pro 只在用户显式要求 `--depth-backend apple-depth-pro` 且已安装时使用。
+- 使用单层、单次 `gl.drawElements` 的 depth mesh；不得自动选择双层人物蒙版、前景抠图、补洞纹理或卡片分层。
+- 使用 `depthScale=1.80`、`motion=1.40`、`perspective=1.15`；自动巡游 X/Y 振幅为 `0.42/0.22`。
+- 同时支持鼠标、触摸与 `deviceorientation`；手动输入后平滑回到自动巡游。
+- 不生成 HUD、滑杆或按钮。
+- 使用真实深度轻度虚化远景：`1-smoothstep(0.14,0.30,depth)`、五点采样半径 `2.25px`、混合强度 `0.52`，保持人物和近景清晰。
+- 在 HTML 中内嵌 RGB 与稳定 depth，保持原图宽高比，允许直接 `file://` 打开；最终至少交付稳定 depth PNG 与 HTML。
 
-规则：
+深度输入和兼容模式：
 
-- 如果用户没有指定，默认用 `displacement`。
-- 如果有真实 depth map，传 `--depth <depth-map>`；如果没有 depth map，脚本会生成启发式深度图，只适合快速预览。
-- 最终回复给出生成的 depth map 和 HTML 链接；如果在 Codex 桌面环境中，可以直接打开 HTML。
-- 用户界面命名避免使用“透视”；滑块名称优先用“空间位移、空间感、移动幅度”等。
-- 不要把空间照片预览和 360 环景预览混用：360 环景用 `create_panorama_viewer.py` 或 `create_dynamic_panorama_viewer.py`，空间照片用 `create_spatial_preview.py`。
+- 已有稳定深度图使用 `--depth <stable.png>`；已有模型原始深度使用 `--raw-depth <raw.png>`，不得混淆两者。
+- 只有用户明确接受非模型预览时才使用 `--depth-backend heuristic`。结果必须标记 `heuristic-fallback`，不得称为 Depth Anything V2 或真实模型深度。
+- `--spatial-mode displacement` 只作为显式兼容模式；`--spatial-mode mesh` 是默认。`--blur`、`--interaction`、`--depth-scale`、`--motion` 等参数只在用户明确要求偏离 v18 时调整。
+- 真实 backend 不可用时停止并准确报告；不要捕获错误后静默降级。
+- 最终回复给出 `raw_depth`（本次推理时）、`stable_depth` 和 `html` 路径，并准确说明 `depth_provenance`。
+- 不要把空间照片与 360° 全景预览混用。
 
 ## 动态视频模式
 
 使用 BigModel/CogVideoX 生成动态效果时走独立脚本：
 
 ```bash
-BIGMODEL_API_KEY="$KEY" python3 /Users/yuanchaoyi/.codex/skills/multi-style-image-generator/scripts/create_bigmodel_video.py \
+python3 scripts/create_bigmodel_video.py \
   --prompt "<video prompt>" \
   --image "<optional-local-image.png>" \
   --model cogvideox-3 \
@@ -106,13 +125,14 @@ BIGMODEL_API_KEY="$KEY" python3 /Users/yuanchaoyi/.codex/skills/multi-style-imag
 
 规则：
 
-- 不要把 API Key 写入 skill 文件、脚本、README 或输出产物。优先使用环境变量 `BIGMODEL_API_KEY`，也兼容 `ZHIPU_API_KEY`。
-- 用户在对话里临时提供 key 时，只能在当前命令环境中使用；不要落盘保存。
+- 不要把 API Key 写入 skill 文件、脚本、README、对话或输出产物，也不要要求用户在对话中粘贴 API Key。
+- macOS 首次生成视频且没有环境变量时，脚本会弹出隐藏输入的系统对话框，并把 API Key 保存到 macOS 钥匙串；后续自动读取，不再重复询问。环境变量 `BIGMODEL_API_KEY` 或 `ZHIPU_API_KEY` 仍可作为临时覆盖，且优先于钥匙串。
+- 用户说“更换视频生成 SK”时，运行 `python3 scripts/create_bigmodel_video.py --replace-api-key`；用户说“删除已保存的视频生成 SK”时，运行 `python3 scripts/create_bigmodel_video.py --forget-api-key`。不要在命令参数中传入 SK。
 - 用户给本地图片并要求“把这个变成视频/让这张图动起来”时，传 `--image <local-path>`。脚本会把 PNG/JPEG 转为 `image_url` 的 data URL；图片必须不超过 5MB。
 - 视频 prompt 应描述镜头运动、主体运动、环境动态和节奏，例如“slow cinematic push-in, cloth and dust moving, magical particles drifting”。避免写静态构图词过多。
-- 如果用户要求“动态效果”但没有要求视频文件，可以默认生成 5-10 秒横版视频；参数默认 `model=cogvideox-3`、`quality=quality`、`size=1920x1080`、`fps=30`、`with_audio=true`。
+- 如果用户要求“动态效果”但没有指定时长，默认生成 5 秒横版视频；仅当用户明确要求时使用 10 秒。`duration` 只支持 `5` 或 `10`；参数默认 `model=cogvideox-3`、`quality=quality`、`size=1920x1080`、`fps=30`、`with_audio=true`。
 - 脚本会提交任务、轮询异步结果并下载视频；最终回复给出本地视频文件链接和任务 JSON 链接。
-- 如果用户要求“360 环景视频、360 图生视频、环景图动起来”，从源头保持两步走：先生成 2:1 等距柱状环景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后生成 360 视频预览 HTML。`file://` 本地打开时优先用 `scripts/create_panorama_frame_sequence_viewer.py`：先用 ffmpeg 从视频抽帧，再把帧内嵌进 HTML 循环播放，避免浏览器把本地 `<video>` 上传到 WebGL 纹理时出现黑屏。只有在确定通过 HTTP 服务访问时，才使用 `scripts/create_panorama_video_viewer.py <video.mp4>` 的原始视频纹理方案。不要只把普通 16:9 视频塞进 360 预览。
+- 如果用户要求“360 全景视频、360 环景视频、360 图生视频、环景图动起来”，从源头保持两步走：先生成 2:1 等距柱状投影全景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后生成 360° 全景视频预览 HTML。`file://` 本地打开时优先用 `scripts/create_panorama_frame_sequence_viewer.py`：先运行 `command -v ffmpeg` 检测 ffmpeg，再从视频抽帧并把帧内嵌进 HTML 循环播放，避免浏览器把本地 `<video>` 上传到 WebGL 纹理时出现黑屏。如果检测不到 ffmpeg，说明它是可选的系统依赖并给出由用户自行安装的提示（macOS 可举例 `brew install ffmpeg`）；不要自动运行系统安装、`sudo` 或包管理器。只有在确定通过 HTTP 服务访问时，才使用 `scripts/create_panorama_video_viewer.py <video.mp4>` 的原始视频纹理方案。不要只把普通 16:9 视频塞进 360° 全景预览。
 
 ## 提示词模板
 
@@ -128,7 +148,7 @@ BIGMODEL_API_KEY="$KEY" python3 /Users/yuanchaoyi/.codex/skills/multi-style-imag
 风格元素：[3-7 个关键词，只列名称不展开外观]
 参考图处理：[如有上传图，写明身份/场景/穿着/道具参考；要求整张图统一重绘为目标画风，不要照片贴背景]
 UI 模式：[全量 UI / 轻量 UI / 无 UI；如有可读文字，写清语言]
-视图模式：[普通视图 / 360 度环景照模式；环景照模式必须写「360 度等距柱状投影图像。2:1 宽高比，左右边缘无缝衔接。」]
+视图模式：[普通视图 / 360° 全景图模式；全景图模式必须写「360°×180° 等距柱状投影全景图。2:1 宽高比，左右边缘无缝衔接。」]
 画面要求：[保留主体辨识度，不要现代广告、水印、二维码、乱码、无关角色]
 ```
 
@@ -141,10 +161,11 @@ UI 模式：[全量 UI / 轻量 UI / 无 UI；如有可读文字，写清语言]
 - 真实地点的主体必须可识别。风格元素要自然嵌入，不要盖过真实地标。
 - 上传照片参考时，身份可识别和目标画风必须同时满足；目标不是写实复刻照片，而是让用户作为同一个人自然进入该风格世界。prompt 里要明确禁止“照片脸、绿幕抠图感、硬边缘、人物和背景光照割裂”。
 - UI 遵循用户选择。无 UI 模式下不要出现任何可读文字、HUD、标题、水印或假字。
-- 360 度环景照模式下必须加入“360 度等距柱状投影图像。”，必须要求 2:1 宽高比和左右边缘无缝衔接，并避免写特写镜头、浅景深、单一正面构图、裁切主体等普通镜头语言。
+- 360° 全景图模式下必须加入“360°×180° 等距柱状投影全景图。”，必须要求 2:1 宽高比和左右边缘无缝衔接，并避免写特写镜头、浅景深、单一正面构图、裁切主体等普通镜头语言。
 
 ## 输出模式
 
 - 只写提示词时：只返回最终提示词代码块，不要附带任何其他说明。
 - 直接出图时：调用图像生成工具；最终回复用一句话说明已生成，并点明使用的风格和 UI 模式。
-- 360 度环景照直接出图时：除说明已生成外，优先附上落盘图片链接和预览 HTML 链接；若用户要求动态增强，也附上动态预览 HTML 链接；若无法落盘，说明当前只能展示静态环景图。
+- 360° 全景图直接出图时：满足 `references/portrait-panorama-qa.md` 中适用的用户目标与可用性检查后，附上最终图片和全景预览 HTML；只有明显不可用的候选不得作为最终交付。若用户要求动态增强，再基于可交付的全景图创建动态预览。无法落盘时说明当前只能展示静态候选图。
+- 最终回复只有在身份质检确实通过时才可说“保留了本人脸”；否则使用“参考了人物身份”或“保留相似气质”等准确表述。只有身份精度实质影响用户明确提出的人脸要求时，才额外说明限制；不要因此否定其他方面已经成功的成品。
