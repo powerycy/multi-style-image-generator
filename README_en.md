@@ -188,8 +188,6 @@ The default flow does not ask the user to choose technical parameters:
 - The HTML embeds the RGB image and stabilized depth map and opens directly over `file://`. Standard deliverables are raw depth, stabilized depth PNG, and HTML; when an existing depth map is reused, only files actually generated are delivered.
 - The `--depth-backend heuristic` fallback is used only when the user explicitly accepts a non-model quick preview, and its provenance is labeled `heuristic-fallback`.
 
-“Spatial photo” here means a local interactive HTML experience similar to viewing an Apple spatial photo. It is not an Apple-native spatial photo file or HEIC spatial-media container.
-
 Create a spatial photo preview:
 
 ```bash

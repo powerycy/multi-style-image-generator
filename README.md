@@ -188,8 +188,6 @@ python3 multi-style-image-generator/scripts/create_bigmodel_video.py --forget-ap
 - HTML 内嵌图片与稳定深度图，可以直接通过 `file://` 打开。标准交付包括 raw depth、稳定 depth PNG 和 HTML；如果复用了已有深度图，则只交付实际生成的文件。
 - 只有用户明确接受非模型快速预览时，才使用 `--depth-backend heuristic`，并将来源标记为 `heuristic-fallback`。
 
-这里的“空间照片”指类似 Apple 空间照片观看感受的本地交互 HTML，不是 Apple 原生空间照片文件或 HEIC 空间媒体容器。
-
 创建空间照片预览：
 
 ```bash
