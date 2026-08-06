@@ -5,7 +5,7 @@
 - 搭建平台：GitHub Pages
 - 编程语言：JavaScript
 - AI 参与度：AI + 手动编码
-- 公网地址：部署完成后回填
+- 公网地址：https://powerycy.github.io/multi-style-image-generator/
 - 使用手册：本目录 `USER_GUIDE.md`
 - 封面：`assets/cover.png`
 - 快照：`assets/01-home-desktop.png`、`assets/02-panorama-desktop.png`
@@ -19,3 +19,11 @@
 https://www.xiaohongshu.com/discovery/item/6a5106b0000000001c0272ee?source=webshare&xhsshare=pc_web&xsec_token=AB1juFNWB4nU2ClkmJVpTZA0ig9Xa3kKhkJ1tNvkEaAXI=&xsec_source=pc_share
 
 Item ID：`6a5106b0000000001c0272ee`。官方表单只有出现专门字段时才填写，不挪入其他字段。
+
+## 官方提交回执
+
+- 状态：已提交
+- 唯一参赛凭证 ID：`6a7435100013596642d7`
+- 提交时间：2026-08-06 15:18（Asia/Shanghai）
+- 材料：使用手册、1 张封面、2 张真实产品快照
+- 小红书：官方自助报名表没有对应字段，因此未填入无关字段
