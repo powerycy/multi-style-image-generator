@@ -6,6 +6,8 @@
 - 仓库：`powerycy/multi-style-image-generator`
 - 报名通道：自助报名；项目由本地代码和 AI Coding 完成，不冒充秒哒作品。
 - 产品形态：无需登录、无需 Key 的公网 Web 工具。
+- 公网地址：https://powerycy.github.io/multi-style-image-generator/（已匿名核验完整加载）。
+- 官方提交：已提交；唯一参赛凭证 ID `6a7435100013596642d7`；2026-08-06 15:18（Asia/Shanghai）。
 - 视觉方向：7 种。
 - 空间输出：普通图片、360° 全景、空间景深，共 3 种。
 - 全景示例：1774 × 887，严格 2:1 等距柱状投影。
