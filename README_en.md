@@ -1,6 +1,13 @@
+<!-- README_SYNC: source=working-tree; updated=2026-08-26 -->
+
 # Multi Style Image Generator
 
 [中文说明](README.md)
+
+<p align="center">
+  A first-wave open co-building project from the <a href="https://github.com/shengjidaguai-china"><strong>Shengji Daguai Open Source Community</strong></a> ·
+  <a href="https://github.com/shengjidaguai-china"><strong>Follow the organization</strong></a> for new projects and community activities
+</p>
 
 A Codex skill for multi-style image generation. It turns style routing, structured prompting, uploaded-photo references, game UI modes, 360° panorama previews, spatial photo previews, and video generation into a repeatable workflow for producing coherent, recognizable, and easy-to-iterate visual concepts.
 
