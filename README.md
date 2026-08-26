@@ -1,6 +1,13 @@
+<!-- README_SYNC: source=working-tree; updated=2026-08-26 -->
+
 # Multi Style Image Generator
 
 [English README](README_en.md)
+
+<p align="center">
+  <a href="https://github.com/shengjidaguai-china"><strong>升级打怪开源社区</strong></a> 首批开放共建项目 ·
+  <a href="https://github.com/shengjidaguai-china">点击组织首页右上角 <strong>Follow</strong></a>，及时获取新项目与共建活动
+</p>
 
 面向 Codex 的多风格图片生成 skill。它把常见的视觉风格路由、提示词结构、上传照片参考、游戏 UI 模式、360° 全景预览、空间照片预览和动态视频生成整理成一套稳定工作流，适合快速生成风格统一、主体清晰、可继续迭代的视觉方案。
 
