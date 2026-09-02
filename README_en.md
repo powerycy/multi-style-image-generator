@@ -9,27 +9,15 @@
   <a href="https://github.com/shengjidaguai-china"><strong>Follow the organization</strong></a> for new projects and community activities
 </p>
 
-A Codex Skill for multi-style image generation. It combines style routing, crochet/yarn-knit scenes, uploaded-photo references, game UI, 360° panorama previews, real-depth spatial photos, colored point clouds, and video generation in one repeatable workflow.
+A Codex Skill for multi-style image generation. First choose a style template, then choose a presentation format. Style templates cover open-world fantasy, dark Chinese myth, cultivation, occult steampunk, pixel art, crochet/yarn-knit, and more. Presentation formats include 2D images, 360° panoramas, spatial-depth images, and colored point clouds, with a separate video workflow also available.
 
 If this project is useful to you, please consider starring it on GitHub to support future updates.
 
 ## Generated Results
 
-The examples below show representative output directions. Actual results vary by subject, reference images, and model behavior.
+This Skill has two dimensions that can be combined freely: the style template determines how the image looks, while the presentation format determines how it is displayed and explored. Actual results vary by subject, reference images, and model behavior.
 
-### 2026-09-02 · New Styles & Spatial Modes
-
-All four examples below were generated today: the Dunhuang scene can be turned into either a colored point cloud or a spatial-depth preview, while a historical street can be rebuilt as a complete crochet miniature world.
-
-| Dunhuang · Dark Chinese Myth Source | Dunhuang · Single-Image Colored Point Cloud |
-|---|---|
-| <img src="assets/examples/dunhuang-dark-myth-source.jpg" width="420" alt="Dunhuang dark Chinese myth source scene"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.jpg" width="420" alt="Dunhuang single-image colored point-cloud preview"> |
-
-| Qingming Street · Crochet / Yarn-Knit | Dunhuang · Spatial Depth with Three Sliders |
-|---|---|
-| <img src="assets/examples/qingming-crochet-city.jpg" width="420" alt="Crochet and yarn-knit Qingming historical street"> | <img src="assets/examples/dunhuang-spatial-depth-controls-preview.jpg" width="420" alt="Dunhuang spatial-depth viewer with depth motion and perspective sliders"> |
-
-### More Styles
+### Style Templates
 
 | Open-World Fantasy Adventure | Dark Chinese Myth |
 |---|---|
@@ -43,13 +31,30 @@ All four examples below were generated today: the Dunhuang scene can be turned i
 |---|---|
 | <img src="assets/examples/creature-collection-2.png" width="420" alt="Creature-collection example"> | <img src="assets/examples/pixel-farm-2.png" width="420" alt="Pixel farming example"> |
 
-| Pixel Underwater Adventure | 360° Panorama Preview |
+| Pixel Underwater Adventure | Crochet / Yarn-Knit Miniature |
 |---|---|
-| <img src="assets/examples/pixel-underwater-2.png" width="420" alt="Pixel underwater example"> | <img src="assets/examples/cultivation-360-panorama.gif" width="420" alt="360° panorama animated GIF preview"> |
+| <img src="assets/examples/pixel-underwater-2.png" width="420" alt="Pixel underwater example"> | <img src="assets/examples/qingming-crochet-city.jpg" width="420" alt="Crochet and yarn-knit Qingming historical street example"> |
 
-| Spatial Depth Preview | Dynamic 360° Panorama Video Preview |
+### Presentation Formats
+
+The same style template can be carried into different presentation formats when the source material and request are suitable.
+
+| 2D Image | 360° Panorama |
 |---|---|
-| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="Spatial depth animated preview GIF"> | <img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="Dynamic 360° panorama video preview GIF"> |
+| <img src="assets/examples/dunhuang-dark-myth-source.jpg" width="420" alt="2D Dunhuang dark Chinese myth scene"> | <img src="assets/examples/cultivation-360-panorama.gif" width="420" alt="360° panorama interactive preview"> |
+
+| Spatial-Depth Image | Colored Point Cloud |
+|---|---|
+| <img src="assets/examples/dunhuang-spatial-depth-controls-preview.jpg" width="420" alt="Dunhuang spatial-depth viewer with depth motion and perspective sliders"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.jpg" width="420" alt="Dunhuang single-image colored point-cloud preview"> |
+
+<details>
+<summary>View animated demonstrations of the 360° panorama and spatial-depth formats</summary>
+
+| Spatial-Depth Image · Animated Demo | 360° Panorama · Dynamic-Enhanced Demo |
+|---|---|
+| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="Spatial-depth image animated demonstration GIF"> | <img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="360° panorama dynamic-enhanced demonstration GIF"> |
+
+</details>
 
 ## Core Capabilities
 

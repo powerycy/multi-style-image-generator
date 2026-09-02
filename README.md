@@ -9,27 +9,15 @@
   <a href="https://github.com/shengjidaguai-china">点击组织首页右上角 <strong>Follow</strong></a>，及时获取新项目与共建活动
 </p>
 
-面向 Codex 的多风格图片生成 Skill。它把视觉风格路由、毛线编织/钩针场景、上传照片参考、游戏 UI、360° 全景预览、真实景深、彩色点云和动态视频整理成一套稳定工作流，适合快速生成风格统一、主体清晰、可继续迭代的视觉方案。
+面向 Codex 的多风格图片生成 Skill。使用时先选择「风格模板」，再选择「表现形式」：风格模板覆盖开放世界、暗黑中式神话、修仙、蒸汽神秘学、像素与毛线编织/钩针等方向；表现形式支持 2D 图片、360° 全景图、空间景深图和彩色点云，并保留动态视频工作流。
 
 如果这个项目对你有帮助，欢迎在 GitHub 上 Star ⭐️ 支持后续更新。
 
 ## 生成效果
 
-以下示例展示不同视觉方向的生成效果。实际结果会随输入主体、参考图和模型状态变化。
+这套 Skill 包含两个可以自由组合的维度：「风格模板」决定画面长什么样，「表现形式」决定画面如何展示与交互。实际结果会随输入主体、参考图和模型状态变化。
 
-### 2026-09-02 · 新增风格与空间玩法
-
-下面四张均来自今天的实际生成结果：敦煌底图可以继续制作彩色点云或空间景深，历史街景也可以完整转译为毛线编织/钩针微缩世界。
-
-| 敦煌·暗黑中式神话底图 | 敦煌·单图彩色点云 |
-|---|---|
-| <img src="assets/examples/dunhuang-dark-myth-source.jpg" width="420" alt="敦煌暗黑中式神话风景底图"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.jpg" width="420" alt="敦煌单图彩色点云交互预览"> |
-
-| 清明街市·毛线编织/钩针 | 敦煌·空间景深与三滑杆 |
-|---|---|
-| <img src="assets/examples/qingming-crochet-city.jpg" width="420" alt="清明上河图街市的毛线编织钩针风格示例"> | <img src="assets/examples/dunhuang-spatial-depth-controls-preview.jpg" width="420" alt="敦煌空间景深与空间感移动幅度透视滑杆"> |
-
-### 更多风格
+### 风格模板
 
 | 开放世界奇幻冒险 | 暗黑中式神话 |
 |---|---|
@@ -43,13 +31,30 @@
 |---|---|
 | <img src="assets/examples/creature-collection-2.png" width="420" alt="彩色怪物收集冒险示例"> | <img src="assets/examples/pixel-farm-2.png" width="420" alt="温暖像素农场示例"> |
 
-| 像素海底冒险 | 360° 全景预览 |
+| 像素海底冒险 | 毛线编织 / 钩针微缩 |
 |---|---|
-| <img src="assets/examples/pixel-underwater-2.png" width="420" alt="像素海底冒险示例"> | <img src="assets/examples/cultivation-360-panorama.gif" width="420" alt="360° 全景动态预览 GIF"> |
+| <img src="assets/examples/pixel-underwater-2.png" width="420" alt="像素海底冒险示例"> | <img src="assets/examples/qingming-crochet-city.jpg" width="420" alt="清明上河图街市的毛线编织钩针风格示例"> |
 
-| 空间景深预览 | 动态 360° 全景视频预览 |
+### 表现形式
+
+同一个风格模板可以根据素材与需求，继续生成不同的展示结果。
+
+| 2D 图片 | 360° 全景图 |
 |---|---|
-| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深动态预览 GIF"> | <img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="动态 360° 全景视频预览 GIF"> |
+| <img src="assets/examples/dunhuang-dark-myth-source.jpg" width="420" alt="2D 敦煌暗黑中式神话风景图"> | <img src="assets/examples/cultivation-360-panorama.gif" width="420" alt="360° 全景图交互预览"> |
+
+| 空间景深图 | 彩色点云 |
+|---|---|
+| <img src="assets/examples/dunhuang-spatial-depth-controls-preview.jpg" width="420" alt="敦煌空间景深图与空间感移动幅度透视滑杆"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.jpg" width="420" alt="敦煌单图彩色点云交互预览"> |
+
+<details>
+<summary>查看 360° 全景图与空间景深图的动态演示</summary>
+
+| 空间景深图·动态演示 | 360° 全景图·动态增强演示 |
+|---|---|
+| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深图动态演示 GIF"> | <img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="360° 全景图动态增强演示 GIF"> |
+
+</details>
 
 ## 核心能力
 
