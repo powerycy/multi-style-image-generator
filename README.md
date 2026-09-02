@@ -45,14 +45,12 @@
 
 | 空间景深图 | 彩色点云 |
 |---|---|
-| <img src="assets/examples/dunhuang-spatial-depth-controls-preview.jpg" width="420" alt="敦煌空间景深图与空间感移动幅度透视滑杆"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.jpg" width="420" alt="敦煌单图彩色点云交互预览"> |
+| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深图动态演示 GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="敦煌单图彩色点云快速旋转动态演示 GIF"> |
 
 <details>
-<summary>查看 360° 全景图与空间景深图的动态演示</summary>
+<summary>查看 360° 全景图的动态增强演示</summary>
 
-| 空间景深图·动态演示 | 360° 全景图·动态增强演示 |
-|---|---|
-| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深图动态演示 GIF"> | <img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="360° 全景图动态增强演示 GIF"> |
+<img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="360° 全景图动态增强演示 GIF">
 
 </details>
 
