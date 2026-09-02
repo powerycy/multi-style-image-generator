@@ -187,7 +187,7 @@ class RepositoryContractTests(unittest.TestCase):
                 self.assertLessEqual(duration_ms, 4000)
                 self.assertIn(b"NETSCAPE2.0", payload)
 
-    def test_pointcloud_showcase_gif_is_diagonal_animated_and_bounded(self):
+    def test_pointcloud_showcase_gif_is_orbit_animated_and_bounded(self):
         path = ROOT / "assets" / "examples" / "dunhuang-colored-pointcloud-preview.gif"
         self.assertTrue(path.is_file())
         self.assertLessEqual(path.stat().st_size, 5 * 1024 * 1024)
@@ -197,8 +197,8 @@ class RepositoryContractTests(unittest.TestCase):
         delays = gif_frame_delays_ms(payload)
         self.assertGreaterEqual(len(delays), 20)
         duration_ms = sum(delays)
-        self.assertGreaterEqual(duration_ms, 3800)
-        self.assertLessEqual(duration_ms, 4400)
+        self.assertGreaterEqual(duration_ms, 5000)
+        self.assertLessEqual(duration_ms, 5500)
         self.assertIn(b"NETSCAPE2.0", payload)
 
     def test_feature_introduction_uses_precise_generic_contract(self):
