@@ -45,7 +45,7 @@
 
 | 空间景深图 | 彩色点云 |
 |---|---|
-| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深图动态演示 GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="敦煌单图彩色点云从右下至左上的斜向动态演示 GIF"> |
+| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深图动态演示 GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="敦煌单图彩色点云从一侧经过正面旋转至另一侧的动态演示 GIF"> |
 
 <details>
 <summary>查看 360° 全景图的动态增强演示</summary>
