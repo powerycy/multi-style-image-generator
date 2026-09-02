@@ -45,7 +45,7 @@ The same style template can be carried into different presentation formats when 
 
 | Spatial-Depth Image | Colored Point Cloud |
 |---|---|
-| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="Spatial-depth image animated demonstration GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="Fast rotating Dunhuang single-image colored point-cloud demonstration GIF"> |
+| <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="Spatial-depth image animated demonstration GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="Dunhuang single-image colored point cloud moving diagonally from lower right to upper left"> |
 
 <details>
 <summary>View the dynamic-enhanced 360° panorama demonstration</summary>
