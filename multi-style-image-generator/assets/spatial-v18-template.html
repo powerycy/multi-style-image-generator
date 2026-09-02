@@ -11,6 +11,8 @@
       margin: 0;
       overflow: hidden;
       background: #101010;
+      color: #f7f4ed;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
     }
     .stage {
       position: fixed;
@@ -27,10 +29,96 @@
       cursor: crosshair;
       touch-action: none;
     }
+    .controls {
+      position: fixed;
+      z-index: 10;
+      left: 50%;
+      bottom: max(16px, env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      width: min(760px, calc(100vw - 32px));
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+      gap: 12px;
+      align-items: end;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 10px;
+      background: rgba(8,8,8,.58);
+      -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(18px);
+      box-sizing: border-box;
+      box-shadow: 0 10px 32px rgba(0,0,0,.24);
+      font-size: 12px;
+    }
+    .control {
+      display: grid;
+      gap: 7px;
+      min-width: 0;
+      color: rgba(255,255,255,.84);
+    }
+    .control-name {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    output {
+      min-width: 38px;
+      text-align: right;
+      color: #f2c46d;
+      font-variant-numeric: tabular-nums;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin: 0;
+      accent-color: #f2c46d;
+    }
+    button {
+      height: 34px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 8px;
+      color: #111;
+      background: #f2c46d;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:focus-visible,
+    input[type="range"]:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 3px;
+    }
+    @media (max-width: 760px) {
+      .controls {
+        bottom: max(10px, env(safe-area-inset-bottom));
+        width: min(430px, calc(100vw - 20px));
+        grid-template-columns: 1fr;
+        gap: 9px;
+        padding: 10px 12px;
+      }
+      button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="stage"><canvas id="view"></canvas></div>
+  <div class="controls" aria-label="空间景深控制">
+    <label class="control" for="depthScale">
+      <span class="control-name">空间感 <output id="depthText" for="depthScale"></output></span>
+      <input id="depthScale" type="range" min="0" max="1.8" step="0.01">
+    </label>
+    <label class="control" for="motion">
+      <span class="control-name">移动幅度 <output id="motionText" for="motion"></output></span>
+      <input id="motion" type="range" min="0" max="1.4" step="0.01">
+    </label>
+    <label class="control" for="perspective">
+      <span class="control-name">透视 <output id="perspectiveText" for="perspective"></output></span>
+      <input id="perspective" type="range" min="0.4" max="2.2" step="0.01">
+    </label>
+    <button id="autoToggle" type="button" aria-pressed="false">暂停巡游</button>
+  </div>
   <script>
     const CONFIG = __CONFIG__;
     const canvas = document.getElementById('view');
@@ -78,8 +166,8 @@
       pointerY: 0,
       targetX: 0,
       targetY: 0,
-      depthScale: 1.80,
-      motion: 1.40,
+      depthScale: 0.62,
+      motion: 0.56,
       perspective: 1.15,
       auto: true,
       manualUntil: 0,
@@ -244,8 +332,8 @@
       resize();
       const t = (now - state.start) / 1000;
       if (state.auto && now > state.manualUntil) {
-        state.targetX = Math.sin(t * 0.42) * 0.42;
-        state.targetY = Math.cos(t * 0.33) * 0.22;
+        state.targetX = Math.sin(t * 0.42) * 0.36;
+        state.targetY = Math.cos(t * 0.33) * 0.18;
       }
       state.pointerX += (state.targetX - state.pointerX) * 0.055;
       state.pointerY += (state.targetY - state.pointerY) * 0.055;
@@ -338,6 +426,27 @@
         enableOrientation();
       }
     }
+
+    function bindSlider(id, key, textId) {
+      const input = document.getElementById(id);
+      const text = document.getElementById(textId);
+      const sync = () => {
+        state[key] = Number(input.value);
+        text.value = Number(input.value).toFixed(2);
+      };
+      input.value = String(state[key]);
+      text.value = Number(state[key]).toFixed(2);
+      input.addEventListener('input', sync);
+    }
+
+    bindSlider('depthScale', 'depthScale', 'depthText');
+    bindSlider('motion', 'motion', 'motionText');
+    bindSlider('perspective', 'perspective', 'perspectiveText');
+    document.getElementById('autoToggle').addEventListener('click', event => {
+      state.auto = !state.auto;
+      event.currentTarget.textContent = state.auto ? '暂停巡游' : '自动巡游';
+      event.currentTarget.setAttribute('aria-pressed', String(!state.auto));
+    });
 
     canvas.addEventListener('pointermove', event => setPointer(event.clientX, event.clientY));
     canvas.addEventListener('pointerdown', event => {

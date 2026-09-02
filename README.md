@@ -1,4 +1,4 @@
-<!-- README_SYNC: source=working-tree; updated=2026-08-26 -->
+<!-- README_SYNC: source=working-tree; updated=2026-09-02 -->
 
 # Multi Style Image Generator
 
@@ -9,13 +9,27 @@
   <a href="https://github.com/shengjidaguai-china">点击组织首页右上角 <strong>Follow</strong></a>，及时获取新项目与共建活动
 </p>
 
-面向 Codex 的多风格图片生成 skill。它把常见的视觉风格路由、提示词结构、上传照片参考、游戏 UI 模式、360° 全景预览、空间照片预览和动态视频生成整理成一套稳定工作流，适合快速生成风格统一、主体清晰、可继续迭代的视觉方案。
+面向 Codex 的多风格图片生成 Skill。它把视觉风格路由、毛线编织/钩针场景、上传照片参考、游戏 UI、360° 全景预览、真实景深、彩色点云和动态视频整理成一套稳定工作流，适合快速生成风格统一、主体清晰、可继续迭代的视觉方案。
 
 如果这个项目对你有帮助，欢迎在 GitHub 上 Star ⭐️ 支持后续更新。
 
 ## 生成效果
 
 以下示例展示不同视觉方向的生成效果。实际结果会随输入主体、参考图和模型状态变化。
+
+### 2026-09-02 · 新增风格与空间玩法
+
+下面四张均来自今天的实际生成结果：敦煌底图可以继续制作彩色点云或空间景深，历史街景也可以完整转译为毛线编织/钩针微缩世界。
+
+| 敦煌·暗黑中式神话底图 | 敦煌·单图彩色点云 |
+|---|---|
+| <img src="assets/examples/dunhuang-dark-myth-source.jpg" width="420" alt="敦煌暗黑中式神话风景底图"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.jpg" width="420" alt="敦煌单图彩色点云交互预览"> |
+
+| 清明街市·毛线编织/钩针 | 敦煌·空间景深与三滑杆 |
+|---|---|
+| <img src="assets/examples/qingming-crochet-city.jpg" width="420" alt="清明上河图街市的毛线编织钩针风格示例"> | <img src="assets/examples/dunhuang-spatial-depth-controls-preview.jpg" width="420" alt="敦煌空间景深与空间感移动幅度透视滑杆"> |
+
+### 更多风格
 
 | 开放世界奇幻冒险 | 暗黑中式神话 |
 |---|---|
@@ -45,8 +59,10 @@
 - 统一画风重绘：上传真人照片时，人物、脸、衣服、道具和背景会被要求统一转译成目标画风，避免照片脸贴背景或绿幕抠图感。
 - UI 模式控制：支持轻量 UI、全量 UI、无 UI 三种模式。
 - 真实地点风格化：尽量保留真实地点主体可识别度，同时加入目标风格元素。
+- 毛线编织 / 钩针场景：把人物、建筑、街道、天空与器物统一转译为带可见针脚和纤维质感的手作微缩世界，也支持历史名画与长卷的场景化重构。
 - 360° 全景图工作流：支持 360°×180° 等距柱状投影提示、2:1 比例规格化、静态 HTML 预览和动态增强 HTML 预览。
-- 空间景深图 / 空间照片预览：自动复用用户上传或刚生成的图片，默认通过 Depth Anything V2 生成真实深度和稳定深度图，再创建无 HUD、可自动巡游和拖动查看的单层 depth mesh HTML。
+- 空间景深图 / 空间照片预览：自动复用用户上传或刚生成的图片，默认通过 Depth Anything V2 生成真实深度和稳定深度图，再创建可自动巡游、拖动查看，并带“空间感 / 移动幅度 / 透视”三滑杆的单层 depth mesh HTML。
+- 彩色点云预览：把单张图片与真实深度采样为可旋转、缩放的彩色点云，带深度、点大小和焦平面控制；这是单图深度点云，不冒充完整 3D 重建。
 - 动态视频模式：支持 BigModel/CogVideoX 文生视频和图生视频；macOS 首次安全输入后保存到钥匙串，后续自动读取，不把 key 写进文件或对话。
 
 ## 支持风格
@@ -60,6 +76,7 @@
 | 彩色怪物收集冒险 | 原创训练家、原创伙伴生物、草地道路、回合制遭遇 |
 | 温暖像素农场 | 农场、小镇、作物、工具栏、季节生活 |
 | 像素海底冒险 | 潜水、珊瑚、鱼群、深海遗迹、经营冒险 |
+| 毛线编织 / 钩针微缩 | 人物、历史街市、建筑、生活场景、静物与 360° 全景图 |
 
 ## 安装
 
@@ -106,6 +123,7 @@ python3 scripts/run_with_deps.py create_spatial_preview.py --help
 | 没有任何文字和界面 | `无 UI` |
 | 360° 全景图 | `360°×180° 等距柱状投影全景图，2:1 宽高比，左右边缘无缝衔接` |
 | 空间景深图 / 空间照片 | `根据当前图片生成空间景深图`；默认自动生成真实深度、稳定深度图和交互 HTML，无需指定参数 |
+| 彩色点云 | `根据当前图片生成彩色点云图`；默认生成真实深度、稳定深度图和可旋转点云 HTML |
 | 图生视频 | `把这张图变成 5 秒动态视频` |
 | 360° 全景图生视频 | `先生成 2:1 全景图，再图生视频，并生成 360° 全景视频预览 HTML` |
 
@@ -162,6 +180,18 @@ python3 multi-style-image-generator/scripts/create_bigmodel_video.py --forget-ap
 使用 $multi-style-image-generator 根据当前图片生成空间景深图；使用真实深度，并生成可交互空间照片 HTML。
 ```
 
+生成毛线编织 / 钩针场景：
+
+```text
+使用 $multi-style-image-generator 参考《清明上河图》原作，把右侧城内街市重构为毛线编织和钩针微缩场景，人物、建筑、道路、摊位与天空全部使用统一织物材质，颜色丰富但协调，直接出图。
+```
+
+生成彩色点云：
+
+```text
+使用 $multi-style-image-generator 根据当前敦煌图片生成彩色点云图；使用真实深度，并生成可拖拽旋转、滚轮缩放的点云 HTML。
+```
+
 生成动态视频：
 
 ```text
@@ -191,7 +221,8 @@ python3 multi-style-image-generator/scripts/create_bigmodel_video.py --forget-ap
 默认流程无需用户选择技术参数：
 
 - 使用 Depth Anything V2 Small 推理 raw depth，并生成尺寸与原图一致的稳定深度图；不会静默改用启发式深度。
-- 使用单层 depth mesh 创建沉浸式 HTML，支持自动巡游、鼠标、触摸和设备方向，不显示 HUD、滑杆或按钮。
+- 使用单层 depth mesh 创建沉浸式 HTML，支持自动巡游、鼠标、触摸和设备方向；底部默认显示“空间感、移动幅度、透视”三条实时滑动条和巡游开关。
+- 默认沿用历史 Demo 的克制镜头手感，不增加景深虚化；只有明确要求时才启用 `--blur depth`。
 - HTML 内嵌图片与稳定深度图，可以直接通过 `file://` 打开。标准交付包括 raw depth、稳定 depth PNG 和 HTML；如果复用了已有深度图，则只交付实际生成的文件。
 - 只有用户明确接受非模型快速预览时，才使用 `--depth-backend heuristic`，并将来源标记为 `heuristic-fallback`。
 
@@ -205,6 +236,14 @@ python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_prev
 
 ```bash
 python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --depth path/to/stable-depth.png --out-dir path/to/output
+```
+
+### 彩色点云预览
+
+点云模式与空间景深共用同一套真实深度入口，但使用独立的彩色点渲染器。它支持鼠标或触摸旋转、滚轮缩放，以及深度、点大小、焦平面三条滑动条。它表达的是单张图片推断出的空间层次，并不是完整 3D 扫描或多视角重建。
+
+```bash
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode pointcloud --out-dir path/to/output
 ```
 
 ## 视频模式说明
@@ -240,6 +279,12 @@ python3 multi-style-image-generator/scripts/create_dynamic_panorama_viewer.py pa
 
 ```bash
 python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --out-dir path/to/output
+```
+
+创建彩色点云预览：
+
+```bash
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode pointcloud --out-dir path/to/output
 ```
 
 生成 BigModel/CogVideoX 视频：
@@ -278,10 +323,13 @@ multi-style-image-generator/
     │   ├── game-visual-styles.md
     │   └── portrait-panorama-qa.md
     ├── assets/
+    │   ├── pointcloud-template.html
     │   └── spatial-v18-template.html
     ├── tests/
     │   └── test_spatial_v18.py
     └── scripts/
+        ├── create_pointcloud_viewer.py
+        └── create_spatial_preview.py
 ```
 
 ## 依赖
@@ -290,7 +338,7 @@ multi-style-image-generator/
 - 提示词、BigModel/CogVideoX 视频、图片提取和 360 HTML 查看器脚本只需要 Python 标准库
 - Pillow / NumPy 和空间真实深度推理所需的 PyTorch / Transformers、Safetensors、Hugging Face Hub 由启动器自动安装到 `multi-style-image-generator/.venv`
 - 首次生成空间景深图会下载 Depth Anything V2 Small 模型；后续复用 Hugging Face 缓存。首次安装和模型下载需要网络，并会比普通出图占用更多时间和磁盘空间
-- 360° 全景 HTML 预览、动态增强预览和空间照片预览需要支持 WebGL 的现代浏览器
+- 360° 全景 HTML 预览、动态增强预览、空间照片预览和彩色点云预览需要支持 WebGL 的现代浏览器
 - 视频抽帧预览可选用系统 `ffmpeg`；先用 `command -v ffmpeg` 检测，缺失时请自行安装（macOS 可使用 `brew install ffmpeg`），Skill 不会自动安装系统软件
 
 静态和动态预览 HTML 在嵌入图片数据后都是单文件，可以直接打开。
