@@ -157,6 +157,7 @@ class RepositoryContractTests(unittest.TestCase):
         gif_paths = (
             "assets/examples/spatial-depth-preview.gif",
             "assets/examples/dynamic-360-panorama-preview.gif",
+            "assets/examples/dunhuang-colored-pointcloud-preview.gif",
         )
         for path in gif_paths:
             with self.subTest(path=path):
@@ -185,6 +186,20 @@ class RepositoryContractTests(unittest.TestCase):
                 self.assertGreaterEqual(duration_ms, 3000)
                 self.assertLessEqual(duration_ms, 4000)
                 self.assertIn(b"NETSCAPE2.0", payload)
+
+    def test_pointcloud_showcase_gif_is_fast_animated_and_bounded(self):
+        path = ROOT / "assets" / "examples" / "dunhuang-colored-pointcloud-preview.gif"
+        self.assertTrue(path.is_file())
+        self.assertLessEqual(path.stat().st_size, 5 * 1024 * 1024)
+        payload = path.read_bytes()
+        self.assertIn(payload[:6], (b"GIF87a", b"GIF89a"))
+        self.assertEqual(struct.unpack("<HH", payload[6:10]), (520, 292))
+        delays = gif_frame_delays_ms(payload)
+        self.assertGreaterEqual(len(delays), 20)
+        duration_ms = sum(delays)
+        self.assertGreaterEqual(duration_ms, 1500)
+        self.assertLessEqual(duration_ms, 2200)
+        self.assertIn(b"NETSCAPE2.0", payload)
 
     def test_feature_introduction_uses_precise_generic_contract(self):
         skill = self.skill_md.read_text(encoding="utf-8")
