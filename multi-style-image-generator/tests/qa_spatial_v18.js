@@ -60,12 +60,33 @@ async function openViewer(browser, viewport) {
     samples[name] = await sampleCanvas(desktop.page);
   }
   const layout = await desktop.page.evaluate(() => ({
-    controls: document.querySelectorAll('.controls, .hud, input, button').length,
+    controls: document.querySelectorAll('.controls').length,
+    sliders: document.querySelectorAll('.controls input[type="range"]').length,
+    buttons: document.querySelectorAll('.controls button').length,
     overflowX: document.documentElement.scrollWidth > innerWidth,
     overflowY: document.documentElement.scrollHeight > innerHeight,
     webgl: Boolean(document.querySelector('canvas').getContext('webgl')),
   }));
   const leftRight = difference(samples.left.sample, samples.right.sample);
+  const controlsWork = await desktop.page.evaluate(() => {
+    const depth = document.getElementById('depthScale');
+    const motion = document.getElementById('motion');
+    const perspective = document.getElementById('perspective');
+    depth.value = '0.62';
+    motion.value = '0.56';
+    perspective.value = '1.35';
+    depth.dispatchEvent(new Event('input', { bubbles: true }));
+    motion.dispatchEvent(new Event('input', { bubbles: true }));
+    perspective.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('autoToggle').click();
+    const state = window.__spatialDebug.getState();
+    return {
+      depthScale: state.depthScale,
+      motion: state.motion,
+      perspective: state.perspective,
+      auto: state.auto,
+    };
+  });
   Object.values(samples).forEach(sample => delete sample.sample);
   await desktop.page.close();
 
@@ -83,13 +104,14 @@ async function openViewer(browser, viewport) {
   await browser.close();
 
   const result = {
-    desktop: { layout, samples, leftRight, errors: desktop.errors },
+    desktop: { layout, samples, leftRight, controlsWork, errors: desktop.errors },
     mobile: { sample: mobileSample, layout: mobileLayout, errors: mobile.errors },
   };
   console.log(JSON.stringify(result, null, 2));
   const failures = [];
   if (!layout.webgl) failures.push('WebGL unavailable');
-  if (layout.controls !== 0) failures.push('controls/HUD found');
+  if (layout.controls !== 1 || layout.sliders !== 3 || layout.buttons !== 1) failures.push('expected spatial controls not found');
+  if (controlsWork.depthScale !== 0.62 || controlsWork.motion !== 0.56 || controlsWork.perspective !== 1.35 || controlsWork.auto !== false) failures.push('spatial controls did not update viewer state');
   if (layout.overflowX || layout.overflowY || mobileLayout.overflowX || mobileLayout.overflowY) failures.push('layout overflow');
   if (samples.center.visibleRatio < 0.2 || mobileSample.visibleRatio < 0.2) failures.push('canvas mostly empty');
   if (leftRight < 0.25) failures.push(`left/right pixel difference too small: ${leftRight}`);

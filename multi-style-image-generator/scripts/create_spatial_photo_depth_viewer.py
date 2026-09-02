@@ -17,16 +17,16 @@ TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "spatial-v18-temp
 
 @dataclass(frozen=True)
 class ViewerOptions:
-    depth_scale: float = 1.80
-    motion: float = 1.40
+    depth_scale: float = 0.62
+    motion: float = 0.56
     perspective: float = 1.15
-    auto_x: float = 0.42
-    auto_y: float = 0.22
+    auto_x: float = 0.36
+    auto_y: float = 0.18
     blur_near: float = 0.14
     blur_far: float = 0.30
     blur_radius: float = 2.25
     blur_strength: float = 0.52
-    blur: str = "depth"
+    blur: str = "none"
     interaction: str = "mixed"
     provenance: str = "supplied-depth"
 
@@ -69,11 +69,11 @@ def build_document(
     replacements = {
         "__CONFIG__": json.dumps(config, ensure_ascii=False),
         "1.77683316": f"{aspect:.8f}",
-        "depthScale: 1.80": f"depthScale: {_number(options.depth_scale)}",
-        "motion: 1.40": f"motion: {_number(options.motion)}",
+        "depthScale: 0.62": f"depthScale: {_number(options.depth_scale)}",
+        "motion: 0.56": f"motion: {_number(options.motion)}",
         "perspective: 1.15": f"perspective: {_number(options.perspective)}",
-        "Math.sin(t * 0.42) * 0.42": f"Math.sin(t * 0.42) * {_number(options.auto_x)}",
-        "Math.cos(t * 0.33) * 0.22": f"Math.cos(t * 0.33) * {_number(options.auto_y)}",
+        "Math.sin(t * 0.42) * 0.36": f"Math.sin(t * 0.42) * {_number(options.auto_x)}",
+        "Math.cos(t * 0.33) * 0.18": f"Math.cos(t * 0.33) * {_number(options.auto_y)}",
         "smoothstep(0.14, 0.30, depthValue)": (
             f"smoothstep({_number(options.blur_near)}, {_number(options.blur_far)}, depthValue)"
         ),
@@ -116,16 +116,16 @@ def main() -> None:
     parser.add_argument("depth", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--grid", type=int, default=150)
-    parser.add_argument("--depth-scale", type=float, default=1.80)
-    parser.add_argument("--motion", type=float, default=1.40)
+    parser.add_argument("--depth-scale", type=float, default=0.62)
+    parser.add_argument("--motion", type=float, default=0.56)
     parser.add_argument("--perspective", type=float, default=1.15)
-    parser.add_argument("--auto-x", type=float, default=0.42)
-    parser.add_argument("--auto-y", type=float, default=0.22)
+    parser.add_argument("--auto-x", type=float, default=0.36)
+    parser.add_argument("--auto-y", type=float, default=0.18)
     parser.add_argument("--blur-near", type=float, default=0.14)
     parser.add_argument("--blur-far", type=float, default=0.30)
     parser.add_argument("--blur-radius", type=float, default=2.25)
     parser.add_argument("--blur-strength", type=float, default=0.52)
-    parser.add_argument("--blur", choices=("depth", "none"), default="depth")
+    parser.add_argument("--blur", choices=("depth", "none"), default="none")
     parser.add_argument("--interaction", choices=("mixed", "pointer", "auto"), default="mixed")
     parser.add_argument("--provenance", default="supplied-depth")
     args = parser.parse_args()

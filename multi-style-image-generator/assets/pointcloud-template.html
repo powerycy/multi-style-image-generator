@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>单图深度点云预览</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #0f1012;
+      color: #f4f4f0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+    }
+    canvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      touch-action: none;
+      cursor: grab;
+    }
+    canvas.dragging { cursor: grabbing; }
+    .hud {
+      position: fixed;
+      left: max(16px, env(safe-area-inset-left));
+      top: max(16px, env(safe-area-inset-top));
+      width: min(390px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(12,12,12,.58);
+      backdrop-filter: blur(14px);
+      border-radius: 9px;
+      line-height: 1.45;
+      font-size: 13px;
+      pointer-events: none;
+    }
+    .hud strong { display: block; margin-bottom: 4px; font-size: 14px; }
+    .controls {
+      position: fixed;
+      right: max(16px, env(safe-area-inset-right));
+      bottom: max(16px, env(safe-area-inset-bottom));
+      display: grid;
+      gap: 8px;
+      width: min(340px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(12,12,12,.58);
+      backdrop-filter: blur(14px);
+      border-radius: 9px;
+      font-size: 13px;
+    }
+    label {
+      display: grid;
+      grid-template-columns: 74px minmax(100px, 1fr) 44px;
+      align-items: center;
+      gap: 8px;
+    }
+    output { text-align: right; font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; margin: 0; accent-color: #d9b26f; }
+    button {
+      height: 34px;
+      color: #111;
+      background: #d9b26f;
+      border: 0;
+      border-radius: 7px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    button:focus-visible, input[type="range"]:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+    .error {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      text-align: center;
+      background: #0f1012;
+    }
+    @media (max-width: 600px), (max-height: 620px) {
+      .hud { font-size: 12px; width: min(330px, calc(100vw - 24px)); left: 12px; top: 12px; }
+      .controls { width: calc(100vw - 24px); right: 12px; bottom: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="view" aria-label="单图深度点云交互预览"></canvas>
+  <div class="hud">
+    <strong>单图彩色点云预览</strong>
+    鼠标或手指拖拽旋转，滚轮或触控板缩放。这是由单张图片和深度图生成的彩色点云，不是完整的 3D 重建。
+  </div>
+  <div class="controls">
+    <label for="depthScale">深度
+      <input id="depthScale" type="range" min="0" max="3" step="0.01">
+      <output id="depthValue" for="depthScale"></output>
+    </label>
+    <label for="pointSize">点大小
+      <input id="pointSize" type="range" min="0.5" max="8" step="0.1">
+      <output id="pointValue" for="pointSize"></output>
+    </label>
+    <label for="focus">焦平面
+      <input id="focus" type="range" min="0" max="1" step="0.01">
+      <output id="focusValue" for="focus"></output>
+    </label>
+    <button id="reset" type="button">重置视角</button>
+  </div>
+  <script>
+    const CONFIG = __CONFIG__;
+    const DEFAULTS = __DEFAULTS__;
+    const canvas = document.getElementById('view');
+    const gl = canvas.getContext('webgl', {
+      antialias: true,
+      alpha: false,
+      preserveDrawingBuffer: true,
+    });
+
+    if (!gl) {
+      document.body.innerHTML = '<div class="error">当前浏览器不支持 WebGL，无法显示点云。</div>';
+      throw new Error('WebGL unavailable');
+    }
+
+    const vertexShaderSource = `
+      attribute vec3 aPosition;
+      attribute vec3 aColor;
+      uniform mat4 uMatrix;
+      uniform float uPointSize;
+      varying vec3 vColor;
+      void main() {
+        gl_Position = uMatrix * vec4(aPosition, 1.0);
+        gl_PointSize = uPointSize;
+        vColor = aColor;
+      }
+    `;
+    const fragmentShaderSource = `
+      precision mediump float;
+      varying vec3 vColor;
+      void main() {
+        vec2 point = gl_PointCoord - vec2(0.5);
+        float radius = dot(point, point);
+        if (radius > 0.25) discard;
+        float edge = 1.0 - smoothstep(0.18, 0.25, radius);
+        gl_FragColor = vec4(vColor * (0.94 + edge * 0.06), 1.0);
+      }
+    `;
+
+    const state = {
+      yaw: DEFAULTS.yaw,
+      pitch: DEFAULTS.pitch,
+      zoom: DEFAULTS.zoom,
+      depthScale: DEFAULTS.depthScale,
+      pointSize: DEFAULTS.pointSize,
+      focus: DEFAULTS.focus,
+      drag: false,
+      lastX: 0,
+      lastY: 0,
+    };
+
+    function compileShader(type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        throw new Error(gl.getShaderInfoLog(shader));
+      }
+      return shader;
+    }
+
+    const program = gl.createProgram();
+    gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vertexShaderSource));
+    gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fragmentShaderSource));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      throw new Error(gl.getProgramInfoLog(program));
+    }
+    gl.useProgram(program);
+
+    const positionBuffer = gl.createBuffer();
+    const colorBuffer = gl.createBuffer();
+    const aPosition = gl.getAttribLocation(program, 'aPosition');
+    const aColor = gl.getAttribLocation(program, 'aColor');
+    const uMatrix = gl.getUniformLocation(program, 'uMatrix');
+    const uPointSize = gl.getUniformLocation(program, 'uPointSize');
+    let pointCount = 0;
+    let basePoints = null;
+
+    function loadImage(source) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('Embedded image could not be decoded'));
+        image.src = source;
+      });
+    }
+
+    function sampleImages(image, depth) {
+      const cols = CONFIG.cols;
+      const rows = CONFIG.rows;
+      const colorCanvas = document.createElement('canvas');
+      colorCanvas.width = cols;
+      colorCanvas.height = rows;
+      const colorContext = colorCanvas.getContext('2d', { willReadFrequently: true });
+      colorContext.drawImage(image, 0, 0, cols, rows);
+      const colorData = colorContext.getImageData(0, 0, cols, rows).data;
+
+      const depthCanvas = document.createElement('canvas');
+      depthCanvas.width = cols;
+      depthCanvas.height = rows;
+      const depthContext = depthCanvas.getContext('2d', { willReadFrequently: true });
+      depthContext.drawImage(depth, 0, 0, cols, rows);
+      const depthData = depthContext.getImageData(0, 0, cols, rows).data;
+
+      pointCount = cols * rows;
+      basePoints = new Float32Array(pointCount * 3);
+      const colors = new Float32Array(pointCount * 3);
+      const aspect = CONFIG.width / CONFIG.height;
+      for (let y = 0; y < rows; y += 1) {
+        for (let x = 0; x < cols; x += 1) {
+          const pointIndex = y * cols + x;
+          const imageIndex = pointIndex * 4;
+          const vertexIndex = pointIndex * 3;
+          basePoints[vertexIndex] = ((x / (cols - 1)) - 0.5) * aspect * 2.0;
+          basePoints[vertexIndex + 1] = (0.5 - (y / (rows - 1))) * 2.0;
+          basePoints[vertexIndex + 2] = depthData[imageIndex] / 255;
+          colors[vertexIndex] = colorData[imageIndex] / 255;
+          colors[vertexIndex + 1] = colorData[imageIndex + 1] / 255;
+          colors[vertexIndex + 2] = colorData[imageIndex + 2] / 255;
+        }
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+      rebuildPositions();
+    }
+
+    function rebuildPositions() {
+      if (!basePoints) return;
+      const positions = new Float32Array(basePoints.length);
+      for (let index = 0; index < basePoints.length; index += 3) {
+        positions[index] = basePoints[index];
+        positions[index + 1] = basePoints[index + 1];
+        positions[index + 2] = (basePoints[index + 2] - state.focus) * state.depthScale;
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
+      render();
+    }
+
+    function multiply(a, b) {
+      const output = new Float32Array(16);
+      for (let row = 0; row < 4; row += 1) {
+        for (let column = 0; column < 4; column += 1) {
+          output[column * 4 + row] =
+            a[row] * b[column * 4] +
+            a[4 + row] * b[column * 4 + 1] +
+            a[8 + row] * b[column * 4 + 2] +
+            a[12 + row] * b[column * 4 + 3];
+        }
+      }
+      return output;
+    }
+
+    function perspective(fovy, aspect, near, far) {
+      const f = 1 / Math.tan(fovy / 2);
+      const range = 1 / (near - far);
+      return new Float32Array([
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, (far + near) * range, -1,
+        0, 0, (2 * far * near) * range, 0,
+      ]);
+    }
+
+    function translate(z) {
+      return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,z,1]);
+    }
+
+    function rotateX(angle) {
+      const cosine = Math.cos(angle);
+      const sine = Math.sin(angle);
+      return new Float32Array([1,0,0,0, 0,cosine,sine,0, 0,-sine,cosine,0, 0,0,0,1]);
+    }
+
+    function rotateY(angle) {
+      const cosine = Math.cos(angle);
+      const sine = Math.sin(angle);
+      return new Float32Array([cosine,0,-sine,0, 0,1,0,0, sine,0,cosine,0, 0,0,0,1]);
+    }
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+      const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    function render() {
+      resize();
+      gl.clearColor(0.055, 0.057, 0.065, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      if (!pointCount) return;
+      gl.enable(gl.DEPTH_TEST);
+      gl.useProgram(program);
+      const matrix = multiply(
+        perspective(45 * Math.PI / 180, canvas.width / canvas.height, 0.01, 20),
+        multiply(translate(-state.zoom), multiply(rotateX(state.pitch), rotateY(state.yaw))),
+      );
+      gl.uniformMatrix4fv(uMatrix, false, matrix);
+      gl.uniform1f(uPointSize, state.pointSize * Math.min(window.devicePixelRatio || 1, 2));
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.enableVertexAttribArray(aPosition);
+      gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+      gl.enableVertexAttribArray(aColor);
+      gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
+      gl.drawArrays(gl.POINTS, 0, pointCount);
+    }
+
+    canvas.addEventListener('pointerdown', (event) => {
+      state.drag = true;
+      state.lastX = event.clientX;
+      state.lastY = event.clientY;
+      canvas.classList.add('dragging');
+      canvas.setPointerCapture(event.pointerId);
+    });
+    canvas.addEventListener('pointerup', (event) => {
+      state.drag = false;
+      canvas.classList.remove('dragging');
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    });
+    canvas.addEventListener('pointercancel', () => {
+      state.drag = false;
+      canvas.classList.remove('dragging');
+    });
+    canvas.addEventListener('pointermove', (event) => {
+      if (!state.drag) return;
+      state.yaw += (event.clientX - state.lastX) * 0.006;
+      state.pitch += (event.clientY - state.lastY) * 0.006;
+      state.pitch = Math.max(-1.1, Math.min(1.1, state.pitch));
+      state.lastX = event.clientX;
+      state.lastY = event.clientY;
+      render();
+    });
+    canvas.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      state.zoom = Math.max(1.2, Math.min(6, state.zoom + event.deltaY * 0.002));
+      render();
+    }, { passive: false });
+    window.addEventListener('resize', render);
+
+    function bindSlider(id, key, outputId, rebuild) {
+      const input = document.getElementById(id);
+      const output = document.getElementById(outputId);
+      input.value = String(state[key]);
+      output.textContent = Number(state[key]).toFixed(key === 'pointSize' ? 1 : 2);
+      input.addEventListener('input', () => {
+        state[key] = Number(input.value);
+        output.textContent = Number(state[key]).toFixed(key === 'pointSize' ? 1 : 2);
+        if (rebuild) rebuildPositions();
+        else render();
+      });
+    }
+    bindSlider('depthScale', 'depthScale', 'depthValue', true);
+    bindSlider('pointSize', 'pointSize', 'pointValue', false);
+    bindSlider('focus', 'focus', 'focusValue', true);
+
+    document.getElementById('reset').addEventListener('click', () => {
+      Object.assign(state, {
+        yaw: DEFAULTS.yaw,
+        pitch: DEFAULTS.pitch,
+        zoom: DEFAULTS.zoom,
+        depthScale: DEFAULTS.depthScale,
+        pointSize: DEFAULTS.pointSize,
+        focus: DEFAULTS.focus,
+      });
+      for (const [id, key, digits] of [
+        ['depthScale', 'depthScale', 2],
+        ['pointSize', 'pointSize', 1],
+        ['focus', 'focus', 2],
+      ]) {
+        const input = document.getElementById(id);
+        input.value = String(state[key]);
+        input.nextElementSibling.textContent = Number(state[key]).toFixed(digits);
+      }
+      rebuildPositions();
+    });
+
+    window.__pointcloudDebug = {
+      getState: () => ({ ...state, pointCount, provenance: CONFIG.depthProvenance }),
+      setView: (yaw, pitch, zoom = state.zoom) => {
+        state.yaw = yaw;
+        state.pitch = pitch;
+        state.zoom = zoom;
+        render();
+      },
+    };
+
+    Promise.all([loadImage(CONFIG.image), loadImage(CONFIG.depth)])
+      .then(([image, depth]) => sampleImages(image, depth))
+      .catch((error) => {
+        document.body.innerHTML = `<div class="error">点云资源载入失败：${error.message}</div>`;
+        throw error;
+      });
+  </script>
+</body>
+</html>

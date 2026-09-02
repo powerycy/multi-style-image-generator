@@ -1,4 +1,4 @@
-<!-- README_SYNC: source=working-tree; updated=2026-08-26 -->
+<!-- README_SYNC: source=working-tree; updated=2026-09-02 -->
 
 # Multi Style Image Generator
 
@@ -9,13 +9,27 @@
   <a href="https://github.com/shengjidaguai-china"><strong>Follow the organization</strong></a> for new projects and community activities
 </p>
 
-A Codex skill for multi-style image generation. It turns style routing, structured prompting, uploaded-photo references, game UI modes, 360° panorama previews, spatial photo previews, and video generation into a repeatable workflow for producing coherent, recognizable, and easy-to-iterate visual concepts.
+A Codex Skill for multi-style image generation. It combines style routing, crochet/yarn-knit scenes, uploaded-photo references, game UI, 360° panorama previews, real-depth spatial photos, colored point clouds, and video generation in one repeatable workflow.
 
 If this project is useful to you, please consider starring it on GitHub to support future updates.
 
 ## Generated Results
 
 The examples below show representative output directions. Actual results vary by subject, reference images, and model behavior.
+
+### 2026-09-02 · New Styles & Spatial Modes
+
+All four examples below were generated today: the Dunhuang scene can be turned into either a colored point cloud or a spatial-depth preview, while a historical street can be rebuilt as a complete crochet miniature world.
+
+| Dunhuang · Dark Chinese Myth Source | Dunhuang · Single-Image Colored Point Cloud |
+|---|---|
+| <img src="assets/examples/dunhuang-dark-myth-source.jpg" width="420" alt="Dunhuang dark Chinese myth source scene"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.jpg" width="420" alt="Dunhuang single-image colored point-cloud preview"> |
+
+| Qingming Street · Crochet / Yarn-Knit | Dunhuang · Spatial Depth with Three Sliders |
+|---|---|
+| <img src="assets/examples/qingming-crochet-city.jpg" width="420" alt="Crochet and yarn-knit Qingming historical street"> | <img src="assets/examples/dunhuang-spatial-depth-controls-preview.jpg" width="420" alt="Dunhuang spatial-depth viewer with depth motion and perspective sliders"> |
+
+### More Styles
 
 | Open-World Fantasy Adventure | Dark Chinese Myth |
 |---|---|
@@ -45,8 +59,10 @@ The examples below show representative output directions. Actual results vary by
 - Unified style transfer: when a real-person photo is used, the person, face, clothing, props, and background are prompted to be redrawn into one coherent target style instead of pasted together.
 - Lightweight, full, or no UI/HUD modes.
 - Real landmark stylization while keeping the main subject recognizable.
+- Crochet / yarn-knit scenes that consistently translate people, buildings, streets, skies, and props into a tactile miniature world, including historical-painting and long-scroll scene reconstruction.
 - 360° panorama workflow: 360°×180° equirectangular prompting, 2:1 ratio normalization, static HTML previews, and dynamic-enhanced HTML previews.
-- Spatial depth image / spatial photo preview workflow: automatically reuse an uploaded or recently generated image, infer real model depth with Depth Anything V2, stabilize the depth map, and create a HUD-free single-depth-mesh HTML viewer with automatic drift and direct interaction.
+- Spatial depth image / spatial photo preview workflow: automatically reuse an uploaded or recently generated image, infer real model depth with Depth Anything V2, stabilize the depth map, and create a single-depth-mesh HTML viewer with automatic drift, direct interaction, and Space / Motion / Perspective sliders.
+- Colored point-cloud preview: sample the source image and real depth into rotatable, zoomable colored points with depth, point-size, and focal-plane controls. This is a single-image depth point cloud, not a full 3D reconstruction.
 - BigModel/CogVideoX video workflow: supports text-to-video and image-to-video; on macOS the first secure entry is saved to Keychain and automatically reused without writing the key to files or chat.
 
 ## Supported Style Directions
@@ -60,6 +76,7 @@ The examples below show representative output directions. Actual results vary by
 | Colorful creature-collection adventure | Original trainers, original companion creatures, routes, turn-based encounters |
 | Cozy pixel farming | Farms, towns, crops, tools, seasonal life |
 | Pixel underwater adventure | Diving, coral reefs, fish schools, ruins, light management adventure |
+| Crochet / yarn-knit miniature | People, historical streets, architecture, daily-life scenes, still life, and 360° panoramas |
 
 ## Installation
 
@@ -106,6 +123,7 @@ Common phrases:
 | No text or HUD | `No UI` |
 | 360° panorama | `360°×180° equirectangular panorama, 2:1 aspect ratio, seamless left and right edges` |
 | Spatial depth image / spatial photo | `Create a spatial depth image from the current image`; real depth, stabilized depth, and interactive HTML are generated automatically without mode parameters |
+| Colored point cloud | `Create a colored point cloud from the current image`; real depth, stabilized depth, and a rotatable point-cloud HTML viewer are generated automatically |
 | Image-to-video | `Turn this image into a 5-second video` |
 | 360° panorama image-to-video | `First generate a 2:1 panorama, then animate it and create a 360° panorama video preview HTML file` |
 
@@ -162,6 +180,18 @@ Generate a spatial photo preview:
 Use $multi-style-image-generator to create a spatial depth image from the current image, using real depth and an interactive spatial-photo HTML preview.
 ```
 
+Generate a crochet / yarn-knit scene:
+
+```text
+Use $multi-style-image-generator with the original Along the River During the Qingming Festival as reference. Rebuild the right-side city street as a crochet and yarn-knit miniature scene, translating people, buildings, roads, stalls, and sky into one coherent textile world with rich but harmonious color. Generate the image directly.
+```
+
+Generate a colored point cloud:
+
+```text
+Use $multi-style-image-generator to create a colored point cloud from the current Dunhuang image, using real depth and a point-cloud HTML viewer with drag rotation and wheel zoom.
+```
+
 Generate a video:
 
 ```text
@@ -191,7 +221,8 @@ Spatial depth images are for ordinary images, not 360 panoramas. When the user h
 The default flow does not ask the user to choose technical parameters:
 
 - Depth Anything V2 Small infers raw depth, then the workflow creates a stabilized depth map matching the source dimensions. It does not silently substitute heuristic depth.
-- A single depth mesh powers the immersive HTML viewer with automatic drift, mouse, touch, and device-orientation input. The viewer has no HUD, sliders, or buttons.
+- A single depth mesh powers the immersive HTML viewer with automatic drift, mouse, touch, and device-orientation input. Three live sliders—Space, Motion, and Perspective—plus an auto-tour toggle appear at the bottom by default.
+- The restrained motion and perspective of the historical demo remain the default, with no depth blur unless `--blur depth` is explicitly requested.
 - The HTML embeds the RGB image and stabilized depth map and opens directly over `file://`. Standard deliverables are raw depth, stabilized depth PNG, and HTML; when an existing depth map is reused, only files actually generated are delivered.
 - The `--depth-backend heuristic` fallback is used only when the user explicitly accepts a non-model quick preview, and its provenance is labeled `heuristic-fallback`.
 
@@ -205,6 +236,14 @@ With an existing stabilized depth map:
 
 ```bash
 python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --depth path/to/stable-depth.png --out-dir path/to/output
+```
+
+### Colored Point-Cloud Preview
+
+Point-cloud mode shares the same real-depth entry point as spatial depth but uses a dedicated colored-point renderer. It supports mouse or touch rotation, wheel zoom, and Depth / Point Size / Focal Plane sliders. It visualizes spatial layers inferred from one image; it is not a full 3D scan or multi-view reconstruction.
+
+```bash
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode pointcloud --out-dir path/to/output
 ```
 
 ## Video Mode Notes
@@ -240,6 +279,12 @@ Create a spatial photo preview:
 
 ```bash
 python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --out-dir path/to/output
+```
+
+Create a colored point-cloud preview:
+
+```bash
+python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode pointcloud --out-dir path/to/output
 ```
 
 Generate a BigModel/CogVideoX video:
@@ -278,10 +323,13 @@ multi-style-image-generator/
     │   ├── game-visual-styles.md
     │   └── portrait-panorama-qa.md
     ├── assets/
+    │   ├── pointcloud-template.html
     │   └── spatial-v18-template.html
     ├── tests/
     │   └── test_spatial_v18.py
     └── scripts/
+        ├── create_pointcloud_viewer.py
+        └── create_spatial_preview.py
 ```
 
 ## Requirements
@@ -290,7 +338,7 @@ multi-style-image-generator/
 - Prompting, BigModel/CogVideoX video, image extraction, and the 360 HTML viewer scripts require only the Python standard library
 - The launcher automatically installs Pillow / NumPy plus PyTorch / Transformers, Safetensors, and Hugging Face Hub for real spatial-depth inference into `multi-style-image-generator/.venv`
 - The first spatial-depth request downloads the Depth Anything V2 Small model; later runs reuse the Hugging Face cache. Initial setup requires network access and uses more time and disk space than ordinary image generation
-- A modern browser with WebGL support for the 360, dynamic-enhanced, and spatial preview HTML
+- A modern browser with WebGL support for the 360, dynamic-enhanced, spatial-depth, and colored point-cloud preview HTML
 - Frame-sequence previews can optionally use the system `ffmpeg`; detect it with `command -v ffmpeg` and install it yourself if missing (for example, `brew install ffmpeg` on macOS), because the Skill never installs system software automatically
 
 The static and dynamic preview HTML files are standalone when generated with embedded image data.

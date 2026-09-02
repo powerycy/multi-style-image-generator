@@ -1,6 +1,6 @@
 ---
 name: multi-style-image-generator
-description: Use when the user asks to generate images, videos, spatial photo previews, or prompts for game-inspired, animation-like, fantasy, xianxia, occult, pixel, creature-adventure, uploaded-photo stylization, real-place stylization, UI/HUD screenshots, 360 equirectangular panorama images, depth-map parallax previews, or BigModel/CogVideoX video generation in Codex. Triggers include 出图、生成图、写提示词、生成视频、动态效果、视频模式、动起来、CogVideoX、空间景深图、空间照片、景深交互、空间感、空间位移、视差预览、depth map、深度图、上传图片、用我的脸、参考照片、360 度全景图、360 度环景照、原神风格、黑神话风格、修仙风格、诡秘之主风格、宝可梦风格、星露谷风格、潜水员戴夫风格。
+description: Use when the user asks to generate images, videos, spatial photo previews, colored point-cloud previews, or prompts for game-inspired, animation-like, fantasy, xianxia, occult, pixel, creature-adventure, crochet/yarn-knit, uploaded-photo stylization, real-place stylization, UI/HUD screenshots, 360 equirectangular panorama images, depth-map parallax previews, or BigModel/CogVideoX video generation in Codex. Triggers include 出图、生成图、写提示词、生成视频、动态效果、视频模式、动起来、CogVideoX、空间景深图、空间照片、景深交互、空间感、空间位移、视差预览、depth map、深度图、点云、彩色点云、point cloud、上传图片、用我的脸、参考照片、360 度全景图、360 度环景照、毛线编织、针织、钩针、crochet、yarn、原神风格、黑神话风格、修仙风格、诡秘之主风格、宝可梦风格、星露谷物语风格、潜水员戴夫风格。
 ---
 
 # 多风格图片生成
@@ -33,6 +33,7 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 - **宝可梦风格**：宝可梦、Pokemon、精灵、训练家、捕捉、道馆、回合制冒险。
 - **星露谷物语风格**：星露谷、Stardew Valley、农场、像素农场、乡村生活。
 - **潜水员戴夫风格**：潜水员戴夫、Dave the Diver、潜水、海底、寿司店、像素海洋。
+- **毛线编织／钩针风格**：毛线、编织、针织、钩针、crochet、yarn、amigurumi、毛线玩偶、编织场景、手作织物。
 - **未指定**：如果用户只说“游戏风格/幻想风格”，先选最贴近主题的风格；真实名胜默认原神风格，暗黑神话题材默认黑神话悟空风格，修仙/宗门/炼丹/飞剑默认凡人修仙传风格，蒸汽/侦探/神秘学/教会默认诡秘之主风格，农场/小镇默认星露谷物语风格，海底默认潜水员戴夫风格，萌宠/收集默认宝可梦风格。
 
 再判断输出模式：
@@ -41,6 +42,7 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 - **动态视频模式**：用户说“生成视频、动态效果、视频模式、动起来、做成视频、CogVideoX”等，先按目标风格组装视频 prompt，再运行 `scripts/create_bigmodel_video.py` 调用 BigModel 视频生成 API。视频默认 5 秒，只接受 5 秒或 10 秒。这个模式只生成视频，不改动原来的图片、360° 全景 HTML 或动态增强全景 HTML 流程。
 - **360° 全景图生视频模式**：用户说“360 全景视频、360 环景视频、360 图生视频、环景图动起来”等，先生成 2:1 等距柱状投影全景图，再把该 2:1 图片作为 `--image` 输入生成 2:1 视频，最后运行 `scripts/create_panorama_video_viewer.py <video.mp4>` 生成 360° 全景视频预览 HTML。该 HTML 会等待首帧加载、保留点击播放兜底，并强制循环播放；不要只把普通 16:9 视频塞进 360° 全景预览。
 - **空间照片预览模式**：用户说“空间景深图、空间照片、景深交互、空间感、空间位移、视差预览、depth map、深度图、类似苹果空间照片”等，使用 `scripts/run_with_deps.py create_spatial_preview.py` 一次生成真实 raw depth、稳定 depth PNG 和本地 HTML。该模式用于已有普通图片，不重新生成底图，也不替代普通出图或 360° 全景预览。
+- **彩色点云预览模式**：用户明确说“点云、彩色点云、point cloud、像素按深度推开”等，使用同一入口并添加 `--spatial-mode pointcloud`。它把单张图片按真实深度采样为可旋转的彩色点，不是完整 3D 重建；不要把普通“景深图”请求自动改成点云。
 - **只写提示词**：用户明确说“写提示词、不用出图、prompt、给我提示词”等，只返回最终提示词代码块。
 - **不明确**：用户说“做一个/来一个/生成一个”默认直接出图；用户说“写一份/给我一段”默认只写提示词。
 
@@ -51,6 +53,7 @@ description: Use when the user asks to generate images, videos, spatial photo pr
 - **人物身份一致**：用户说“用我的脸、像我本人、保留我的脸、参考这张人物照片”，或把人物照片作为身份参考时，把可辨认为同一个人置于场景细节、特效和造型精致度之前；人脸可见时直接执行，人脸不可见、严重模糊或遮挡时再索取清晰人脸照。不得泛化成游戏角色脸、网红脸、不同年龄感或另一个人，也不得在没有质检证据时承诺“已保留本人脸”。
 - **人物提示词与质检**：生成 prompt 必须包含统一重绘、身份锚点、自然同向视线和世界观融合要求。出图后按 `references/portrait-panorama-qa.md`，在正常观看尺寸和实际交付场景中检查身份、双眼、表情、衣着动作、光照和构图；不要为了检查而过度放大远中景人物。达到用户明确创作目标且没有正常观看时可见的明显身份、眼神、融合、变形或可用性问题时直接交付；只有明显不可用时才重绘。
 - **既有素材衍生**：空间照片预览、360° 全景 HTML、动态增强全景，以及“让这张现有图片动起来”的图生视频，默认继承已有底图或源图，不得自行换脸、换装、改变发饰、姿势或环境。用户要求“先风格化，再制作预览或动画”时，先生成并质检融合后的底图，再进入衍生流程。
+- **历史名画／长卷转译**：用户指定历史名画、长卷或原作扫描时，先取得或读取原作，再按 `references/game-visual-styles.md` 的“历史名画与长卷场景转译”规则提取连续叙事锚点。原作是内容、时代细节与空间关系的最高优先级参考；不得仅凭作品名生成泛化古镇。360° 模式要把长卷重构为观察点四周的真实空间，而不是把原画当作环形背景贴图。
 - **照片场景转译**：用户明确指定某张图作为场景参考时，保留其中可见的主体空间关系，但要把场景整体转译进目标风格，而不是换一个风格背景再贴人。
 - **多风格批量**：同一人物生成多种风格时，每一张的 prompt 都要重复身份锚点、世界观融合、参考图角色和统一重绘约束；只有用户明确要求时才重复原服装、原姿势或原道具约束。不得自行增加风格数量。
 - **像素风降级**：星露谷、潜水员戴夫等像素风不能承诺照片级五官。优先保留脸型/发型轮廓、体态、主色和表情符号等身份锚点，并明确整张图必须使用统一像素网格；如模型无法达到严格像本人，如实说明只能保留相似气质。
@@ -92,20 +95,37 @@ python3 scripts/run_with_deps.py create_spatial_preview.py \
 
 - 使用 `depth-anything-v2-small` 真实模型推理 raw depth，再输出稳定化 depth；Apple Depth Pro 只在用户显式要求 `--depth-backend apple-depth-pro` 且已安装时使用。
 - 使用单层、单次 `gl.drawElements` 的 depth mesh；不得自动选择双层人物蒙版、前景抠图、补洞纹理或卡片分层。
-- 使用 `depthScale=1.80`、`motion=1.40`、`perspective=1.15`；自动巡游 X/Y 振幅为 `0.42/0.22`。
+- 以历史 demo 的镜头手感为默认基准：`depthScale=0.62`、`motion=0.56`、`perspective=1.15`；自动巡游 X/Y 振幅为 `0.36/0.18`。不要为了增强立体感擅自放大空间感或移动幅度，二者会相乘并造成透视拉扯。
 - 同时支持鼠标、触摸与 `deviceorientation`；手动输入后平滑回到自动巡游。
-- 不生成 HUD、滑杆或按钮。
-- 使用真实深度轻度虚化远景：`1-smoothstep(0.14,0.30,depth)`、五点采样半径 `2.25px`、混合强度 `0.52`，保持人物和近景清晰。
+- 不生成额外 HUD；默认在底部显示“空间感、移动幅度、透视”三条实时滑动条，以及“暂停巡游 / 自动巡游”按钮。控件需兼容桌面与手机窄屏，且不影响鼠标、触摸和 `deviceorientation` 交互。
+- 默认不增加景深虚化，以保持历史 demo 的清晰度和空间观感；只有用户明确要求虚化时才启用 `--blur depth`。启用后使用 `1-smoothstep(0.14,0.30,depth)`、五点采样半径 `2.25px`、混合强度 `0.52`，保持人物和近景清晰。
 - 在 HTML 中内嵌 RGB 与稳定 depth，保持原图宽高比，允许直接 `file://` 打开；最终至少交付稳定 depth PNG 与 HTML。
 
 深度输入和兼容模式：
 
 - 已有稳定深度图使用 `--depth <stable.png>`；已有模型原始深度使用 `--raw-depth <raw.png>`，不得混淆两者。
 - 只有用户明确接受非模型预览时才使用 `--depth-backend heuristic`。结果必须标记 `heuristic-fallback`，不得称为 Depth Anything V2 或真实模型深度。
-- `--spatial-mode displacement` 只作为显式兼容模式；`--spatial-mode mesh` 是默认。`--blur`、`--interaction`、`--depth-scale`、`--motion` 等参数只在用户明确要求偏离 v18 时调整。
+- `--spatial-mode displacement` 只作为显式兼容模式；`--spatial-mode mesh` 是默认。`--blur`、`--interaction`、`--depth-scale`、`--motion` 等参数只在用户明确要求偏离历史 demo 基准时调整。
+- `--spatial-mode pointcloud` 仅在用户明确要求点云时使用；它是独立渲染模式，不受单层 mesh 的 `gl.drawElements` 约束。
 - 真实 backend 不可用时停止并准确报告；不要捕获错误后静默降级。
 - 最终回复给出 `raw_depth`（本次推理时）、`stable_depth` 和 `html` 路径，并准确说明 `depth_provenance`。
 - 不要把空间照片与 360° 全景预览混用。
+
+## 彩色点云预览模式
+
+对已有普通图片生成点云时，使用统一入口，让它生成或复用真实深度图：
+
+```bash
+python3 scripts/run_with_deps.py create_spatial_preview.py \
+  <image-path> \
+  --spatial-mode pointcloud \
+  --out-dir <output-directory>
+```
+
+- 默认沿用敦煌点云 demo 的镜头手感：深度 `1.25`、点大小 `2.1`、焦平面 `0.46`、初始水平/垂直旋转 `-0.33/0.18`、镜头距离 `2.25`，横向采样 `250` 点。
+- HTML 内嵌 RGB 与稳定 depth，可直接 `file://` 打开；支持鼠标或触摸拖拽旋转、滚轮缩放，以及“深度、点大小、焦平面”三条滑动条和重置按钮。
+- 默认使用 Depth Anything V2 Small；已有稳定深度图用 `--depth <stable.png>`，已有原始模型深度用 `--raw-depth <raw.png>`。不得静默改用启发式深度。
+- 最终准确说明这是“单图深度点云”而非完整 3D 重建，并交付 raw depth（本次推理时）、stable depth 与 point-cloud HTML。
 
 ## 动态视频模式
 
