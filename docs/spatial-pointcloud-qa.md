@@ -22,13 +22,13 @@ to an existing browser. CI runs both Python suites and both browser suites, and
 uploads screenshots. Point-cloud regression compares six deterministic downsampled
 RGB views with a mean channel tolerance of 4/255; this tolerates rasterizer differences
 without accepting a blank canvas. Behavior checks include visual changes from all
-sliders, reset, drag/touch, angular limits, zoom, demo/pause, desktop/mobile layout,
+sliders, drag/touch through multiple full turns, held orientation, back views, zoom, desktop/mobile layout,
 hidden controls, no external requests and discontinuity triangle rejection.
 
 Inspect all six screenshots before intentionally updating `pointcloud-baselines.json`
 with `--update-baselines`. Never update baselines just to make a failed run pass.
 The fixture has an abrupt foreground oval and smooth background; side views must
-show their separation, without invented backside geometry.
+show their separation, without invented backside geometry. Point-cloud rotation is unrestricted on both axes; releasing a drag keeps its view. Demonstration and reset controls are absent.
 
 ## Routing evaluation
 

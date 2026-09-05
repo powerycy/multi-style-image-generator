@@ -53,7 +53,6 @@ def parser() -> argparse.ArgumentParser:
         default="mesh",
     )
     result.add_argument("--controls", choices=("visible", "hidden"), default="visible")
-    result.add_argument("--demo", choices=("on", "off"), default="off", help="Point-cloud side/front/side orbit.")
     result.add_argument("--output", type=Path)
     result.add_argument("--out-dir", type=Path)
     result.add_argument("--raw-depth-output", type=Path)
@@ -83,8 +82,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser().parse_args(argv)
     if args.spatial_mode == "displacement" and args.controls == "visible":
         raise ValueError("displacement has no controls; use --controls hidden or the default mesh mode")
-    if args.demo == "on" and args.spatial_mode != "pointcloud":
-        raise ValueError("--demo on is only supported for pointcloud")
     image = args.image.expanduser().resolve()
     if not image.is_file():
         raise FileNotFoundError(f"source image not found: {image}")
@@ -137,7 +134,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         options = pointcloud_viewer.ViewerOptions(
             depth_scale=args.depth_scale if args.depth_scale is not None else 1.25,
             point_size=args.point_size,
-            demo=args.demo == "on",
             focus=args.focus,
             yaw=args.yaw,
             pitch=args.pitch,

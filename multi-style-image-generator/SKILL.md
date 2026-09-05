@@ -33,7 +33,7 @@ description: Generate or stylize images and prompts in game, fantasy, pixel or c
 - 需要 Pillow、NumPy、PyTorch 或 Transformers 的脚本一律通过 `scripts/run_with_deps.py`；启动器管理 Skill 内 `.venv` 和依赖，模型复用缓存。不得用全局 pip 或系统安装替代。
 - 真实深度默认 Depth Anything V2 Small；失败报告 backend、错误与阶段，不静默降级。只有用户明确接受非模型预览才用 heuristic，并标记 `heuristic-fallback`。
 - 景深默认显示“空间感、移动幅度、透视”三条滑杆与自动巡游开关：`0.62 / 0.56 / 1.15`，自动 X/Y `0.36 / 0.18`。只有明确要求无控制条时才加 `--controls hidden`；“底图无 UI/HUD”不代表隐藏交互控件。
-- 点云默认保留深度、点大小、焦平面及重置，侧面演示可开关。准确称作“单图深度点云”。HTML 自包含，可用 `file://` 打开。
+- 点云默认保留深度、点大小、焦平面；支持自由 360° 旋转，不提供演示或重置视角。准确称作“单图深度点云”。HTML 自包含，可用 `file://` 打开。
 - 视频凭据保存在 macOS 钥匙串；不要要求用户在对话中粘贴 API Key。更换/删除分别用 `--replace-api-key` / `--forget-api-key`，详情按需读视频流程。
 - 衍生交付附 HTML 与 stable depth，推理或复用 raw 时附 raw depth，并准确标注来源。图像生成结果没有可落盘数据时如实说明，不声称已创建 HTML。
 
