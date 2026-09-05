@@ -49,7 +49,8 @@ async function openViewer(browser, viewport) {
   if (!process.argv[2]) throw new Error('usage: node qa_spatial_v18.js VIEWER.html [SCREENSHOT_DIR]');
   const browser = await chromium.launch({
     headless: true,
-    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    executablePath: process.env.CHROME_PATH || undefined,
+    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
   });
   const desktop = await openViewer(browser, { width: 1440, height: 900 });
   const samples = {};

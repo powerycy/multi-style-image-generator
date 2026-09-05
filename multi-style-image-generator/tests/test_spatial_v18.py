@@ -36,7 +36,7 @@ class SpatialV18Tests(unittest.TestCase):
             _, raw = self.make_images(root)
             stable = stabilize_depth_map.stabilize_depth(raw, root / "stable.png", size=(64, 36))
             with Image.open(stable) as result:
-                values = np.asarray(result)
+                values = np.asarray(result) / 257
                 self.assertEqual(result.size, (64, 36))
                 self.assertLess(int(values.min()), 10)
                 self.assertGreater(int(values.max()), 245)
@@ -124,7 +124,7 @@ class SpatialV18Tests(unittest.TestCase):
         self.assertIn('id="depthScale" type="range"', document)
         self.assertIn('id="pointSize" type="range"', document)
         self.assertIn('id="focus" type="range"', document)
-        self.assertIn('"cols": 250', document)
+        self.assertIn('"cols": 64', document)
         self.assertIn('"depthScale": 1.25', document)
         self.assertIn('"pointSize": 2.1', document)
         self.assertIn('"focus": 0.46', document)
@@ -151,7 +151,7 @@ class SpatialV18Tests(unittest.TestCase):
             )
             result = json.loads(completed.stdout)
             self.assertEqual(result["spatial_mode"], "pointcloud")
-            self.assertEqual(result["preset"], "pointcloud-reference")
+            self.assertEqual(result["preset"], "pointcloud-adaptive")
             self.assertTrue(result["html"].endswith("-pointcloud.html"))
             document = Path(result["html"]).read_text(encoding="utf-8")
             self.assertIn("gl.drawArrays(gl.POINTS", document)

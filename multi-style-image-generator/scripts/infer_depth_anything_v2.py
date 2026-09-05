@@ -44,10 +44,11 @@ def _normalize_depth(values: np.ndarray, invert: bool = False) -> Image.Image:
     low, high = np.percentile(values[finite], [0.5, 99.5])
     if high <= low:
         raise RuntimeError("depth model returned a constant depth map")
+    values = np.where(finite, values, low)
     normalized = np.clip((values - low) / (high - low), 0.0, 1.0)
     if invert:
         normalized = 1.0 - normalized
-    return Image.fromarray(np.uint8(np.round(normalized * 255)), mode="L")
+    return Image.fromarray(np.uint16(np.round(normalized * 65535)))
 
 
 def infer_depth_anything_v2(
@@ -109,7 +110,9 @@ def infer_apple_depth_pro(image_path: Path, output_path: Path) -> Path:
     metric_depth = prediction["depth"].detach().float().cpu().numpy()
     depth = _normalize_depth(metric_depth, invert=True)
     with Image.open(image_path) as rgb:
-        depth = depth.resize(rgb.size, Image.Resampling.BICUBIC)
+        depth = Image.fromarray(np.uint16(np.clip(np.asarray(
+            depth.convert("F").resize(rgb.size, Image.Resampling.BICUBIC)
+        ), 0, 65535)))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     depth.save(output_path)
     return output_path

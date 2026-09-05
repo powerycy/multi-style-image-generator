@@ -219,6 +219,13 @@ The 360 example in this README is shown as a GIF so it can be viewed directly on
 
 ## Spatial Photo Preview Notes
 
+The default keeps depth, motion and perspective sliders plus an automatic-tour toggle: `0.62 / 0.56 / 1.15`, with automatic X/Y amplitudes `0.36 / 0.18`. Use `--controls hidden` only when explicitly requested. A source image without HUD does not hide viewer controls.
+
+Single-image depth point clouds use adaptive sampling, depth-aware soft points and discontinuity cleanup, with bounded angles that avoid unknown backsides. `--demo on` enables a pausable side/front/side orbit; dragging or resetting stops it. Depth, point size, focal plane and reset remain available. Depth stays at higher precision until 16-bit output; edge-aware smoothing and mesh discontinuity rejection reduce stretched silhouettes. Existing 8-bit inputs remain supported but cannot regain lost precision.
+
+`--preset` now accepts only `immersive`; the ineffective `v18/legacy` aliases were removed. Requests for a styled point cloud or spatial image without a source first generate and inspect the image, then derive the viewer. Existing sources are reused. Skill details load progressively by style, source and presentation format.
+
+
 Spatial depth images are for ordinary images, not 360 panoramas. When the user has uploaded an image or the conversation has just generated one, the skill reuses that current image without asking for another upload. If the user first asks to place a person into a new scene, the workflow generates and checks the integrated base image before deriving the spatial preview.
 
 The default flow does not ask the user to choose technical parameters:

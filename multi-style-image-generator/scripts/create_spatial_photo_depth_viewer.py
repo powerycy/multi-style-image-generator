@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image
+from depth_geometry import sampled_depth
 
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "spatial-v18-template.html"
@@ -28,6 +29,7 @@ class ViewerOptions:
     blur_strength: float = 0.52
     blur: str = "none"
     interaction: str = "mixed"
+    controls: str = "visible"
     provenance: str = "supplied-depth"
 
 
@@ -54,14 +56,22 @@ def build_document(
                 f"depth dimensions {depth.size} do not match RGB dimensions {(width, height)}"
             )
 
+    if options.controls not in {"visible", "hidden"}:
+        raise ValueError("controls must be visible or hidden")
     aspect = width / height
+    rows = max(40, round(grid / aspect))
+    if grid < 2 or (grid + 1) * (rows + 1) > 65536:
+        raise ValueError("mesh grid exceeds 16-bit index budget or is too small")
     config = {
         "image": data_uri(image_path),
         "depth": data_uri(depth_path),
         "width": width,
         "height": height,
         "cols": grid,
-        "rows": max(40, round(grid / aspect)),
+        "rows": rows,
+        "depthValues": sampled_depth(depth_path, (grid + 1, rows + 1)),
+        "edgeThreshold": 0.28,
+        "controls": options.controls,
         "depthProvenance": options.provenance,
         "interaction": options.interaction,
     }
@@ -127,6 +137,7 @@ def main() -> None:
     parser.add_argument("--blur-strength", type=float, default=0.52)
     parser.add_argument("--blur", choices=("depth", "none"), default="none")
     parser.add_argument("--interaction", choices=("mixed", "pointer", "auto"), default="mixed")
+    parser.add_argument("--controls", choices=("visible", "hidden"), default="visible")
     parser.add_argument("--provenance", default="supplied-depth")
     args = parser.parse_args()
     options = ViewerOptions(
@@ -142,6 +153,7 @@ def main() -> None:
         blur=args.blur,
         interaction=args.interaction,
         provenance=args.provenance,
+        controls=args.controls,
     )
     write_viewer(args.image.resolve(), args.depth.resolve(), args.output.resolve(), args.grid, options)
     print(args.output.resolve())
