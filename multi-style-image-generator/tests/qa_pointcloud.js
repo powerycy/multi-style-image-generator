@@ -47,7 +47,7 @@ async function pixels(page) {
       assert.equal(await page.locator('input[type=range]:visible').count(),3);
       const samples={};
       for(const [name,seconds] of [['side-a',0],['front',3],['side-b',6]]) {
-        await page.evaluate(s=>{const d=window.__pointcloudDebug,p=d.demoPose(s); d.setView(p.yaw,p.pitch);},seconds);
+        await page.evaluate(s=>{window.__pointcloudDebug.setView(-0.48*Math.cos(s*Math.PI/6),0.12);},seconds);
         samples[name]=await pixels(page);
         assert.equal(samples[name].glError,0);
         assert(samples[name].visible>300,'empty point cloud');
@@ -60,31 +60,31 @@ async function pixels(page) {
         }
       }
       assert(diff(samples['side-a'].sample,samples['side-b'].sample)>1,'orbit does not change image');
+      await page.evaluate(()=>window.__pointcloudDebug.setView(Math.PI*2,0.12));
+      assert(diff(samples.front.sample,(await pixels(page)).sample)<.1,'full turn does not return to front');
+      await page.evaluate(()=>window.__pointcloudDebug.setView(.48,0.12));
       for(const [id,value,key] of [['depthScale','1.8','depthScale'],['pointSize','3.5','pointSize'],['focus','0.3','focus']]) {
         const before=await pixels(page);
         await page.locator(`#${id}`).evaluate((e,v)=>{e.value=v;e.dispatchEvent(new Event('input'));},value);
         assert.equal((await page.evaluate(()=>window.__pointcloudDebug.getState()))[key],Number(value));
         assert(diff(before.sample,(await pixels(page)).sample)>.03,`${id} has no visual effect`);
       }
-      await page.locator('#demo').click();
-      await page.waitForTimeout(180);
-      assert((await page.evaluate(()=>window.__pointcloudDebug.getState())).demo);
-      await page.locator('#demo').click();
-      const paused=await page.evaluate(()=>window.__pointcloudDebug.getState());
-      await page.waitForTimeout(100);
-      assert.equal((await page.evaluate(()=>window.__pointcloudDebug.getState())).yaw,paused.yaw);
-      // Actual drag, including touch pointer events on mobile; clamp before the invisible back side.
+      assert.equal(await page.locator('#demo, #reset').count(),0);
+      // Drag freely through multiple full turns on both axes.
       await page.locator('canvas').dispatchEvent('pointerdown',{pointerId:1,pointerType:device==='mobile'?'touch':'mouse',clientX:80,clientY:250});
       await page.locator('canvas').dispatchEvent('pointermove',{pointerId:1,clientX:10000,clientY:10000});
       await page.locator('canvas').dispatchEvent('pointerup',{pointerId:1});
       const dragged=await page.evaluate(()=>window.__pointcloudDebug.getState());
-      assert.equal(dragged.yaw,.65);assert.equal(dragged.pitch,.35);
+      assert(dragged.yaw>Math.PI*2);assert(dragged.pitch>Math.PI*2);
+      await page.waitForTimeout(200);
+      const held=await page.evaluate(()=>window.__pointcloudDebug.getState());
+      assert.equal(held.yaw,dragged.yaw);assert.equal(held.pitch,dragged.pitch);
+      await page.evaluate(()=>window.__pointcloudDebug.setView(Math.PI,0.12));
+      assert((await pixels(page)).visible>300,"back view missing");
+      await page.screenshot({path:path.join(output,`${device}-back.png`)});
+      await page.evaluate(()=>window.__pointcloudDebug.setView(Math.PI*2,0.12));
       await page.locator('canvas').dispatchEvent('wheel',{deltaY:100});
       assert((await page.evaluate(()=>window.__pointcloudDebug.getState())).zoom>initial.zoom);
-      await page.locator('#reset').click();
-      const reset=await page.evaluate(()=>window.__pointcloudDebug.getState());
-      for(const key of ['yaw','pitch','zoom','depthScale','pointSize','focus']) assert.equal(reset[key],initial[key]);
-      assert.equal(reset.demo,false);
       assert(await page.evaluate(()=>{const r=document.querySelector('.controls').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;}),'controls overflow');
       assert.deepEqual(requests,[],'external requests in file viewer');
       assert.deepEqual(errors,[]);
@@ -102,8 +102,8 @@ async function pixels(page) {
           await page.evaluate(()=>window.__spatialDebug.setView(.4,.1));
           assert((await pixels(page)).visible>1000);
         } else {
-          await page.evaluate(()=>window.__pointcloudDebug.setDemo(true));
-          assert((await page.evaluate(()=>window.__pointcloudDebug.getState())).demo);
+          await page.evaluate(()=>window.__pointcloudDebug.setView(Math.PI*2,Math.PI*2));
+          assert.equal((await page.evaluate(()=>window.__pointcloudDebug.getState())).yaw,Math.PI*2);
         }
       }
       await page.close();

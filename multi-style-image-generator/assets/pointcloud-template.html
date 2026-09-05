@@ -108,8 +108,6 @@
       <input id="focus" type="range" min="0" max="1" step="0.01">
       <output id="focusValue" for="focus"></output>
     </label>
-    <button id="demo" type="button" aria-pressed="false">演示：侧面 → 正面 → 侧面</button>
-    <button id="reset" type="button">重置视角</button>
   </div>
   <script>
     const CONFIG = __CONFIG__;
@@ -162,8 +160,6 @@
       depthScale: DEFAULTS.depthScale,
       pointSize: DEFAULTS.pointSize,
       focus: DEFAULTS.focus,
-      demo: DEFAULTS.demo,
-      demoStart: performance.now(),
       drag: false,
       lastX: 0,
       lastY: 0,
@@ -336,7 +332,6 @@
     }
 
     canvas.addEventListener('pointerdown', (event) => {
-      setDemo(false);
       state.drag = true;
       state.lastX = event.clientX;
       state.lastY = event.clientY;
@@ -354,9 +349,8 @@
     });
     canvas.addEventListener('pointermove', (event) => {
       if (!state.drag) return;
-      state.yaw = clampYaw(state.yaw + (event.clientX - state.lastX) * 0.006);
+      state.yaw = state.yaw + (event.clientX - state.lastX) * 0.006;
       state.pitch += (event.clientY - state.lastY) * 0.006;
-      state.pitch = clampPitch(state.pitch);
       state.lastX = event.clientX;
       state.lastY = event.clientY;
       render();
@@ -384,58 +378,11 @@
     bindSlider('pointSize', 'pointSize', 'pointValue', false);
     bindSlider('focus', 'focus', 'focusValue', true);
 
-    document.getElementById('reset').addEventListener('click', () => {
-      setDemo(false);
-      Object.assign(state, {
-        yaw: DEFAULTS.yaw,
-        pitch: DEFAULTS.pitch,
-        zoom: DEFAULTS.zoom,
-        depthScale: DEFAULTS.depthScale,
-        pointSize: DEFAULTS.pointSize,
-        focus: DEFAULTS.focus,
-      });
-      for (const [id, key, digits] of [
-        ['depthScale', 'depthScale', 2],
-        ['pointSize', 'pointSize', 1],
-        ['focus', 'focus', 2],
-      ]) {
-        const input = document.getElementById(id);
-        input.value = String(state[key]);
-        input.nextElementSibling.textContent = Number(state[key]).toFixed(digits);
-      }
-      rebuildPositions();
-    });
-
-    const clampYaw = value => Math.max(-0.65, Math.min(0.65, value));
-    const clampPitch = value => Math.max(-0.35, Math.min(0.35, value));
-    function demoPose(seconds) {
-      return {yaw: -0.48 * Math.cos(seconds * Math.PI / 6), pitch: 0.12};
-    }
-    function setDemo(enabled) {
-      state.demo = enabled;
-      state.demoStart = performance.now();
-      document.getElementById('demo').textContent = enabled ? '暂停演示' : '演示：侧面 → 正面 → 侧面';
-      document.getElementById('demo').setAttribute('aria-pressed', String(enabled));
-    }
-    document.getElementById('demo').addEventListener('click', () => setDemo(!state.demo));
-    setDemo(DEFAULTS.demo);
-    function animate(now) {
-      if (state.demo && !state.drag) {
-        Object.assign(state, demoPose((now-state.demoStart)/1000));
-        render();
-      }
-      requestAnimationFrame(animate);
-    }
-    requestAnimationFrame(animate);
-
     window.__pointcloudDebug = {
       getState: () => ({ ...state, pointCount, candidateCount: CONFIG.cols * CONFIG.rows, provenance: CONFIG.depthProvenance }),
-      demoPose,
-      setDemo,
       setView: (yaw, pitch, zoom = state.zoom) => {
-        setDemo(false);
-        state.yaw = clampYaw(yaw);
-        state.pitch = clampPitch(pitch);
+        state.yaw = yaw;
+        state.pitch = pitch;
         state.zoom = zoom;
         render();
       },

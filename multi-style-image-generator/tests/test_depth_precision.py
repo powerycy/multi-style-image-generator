@@ -55,8 +55,8 @@ class DepthPrecisionTests(unittest.TestCase):
         for preset in ("legacy", "v18"):
             with self.assertRaises(SystemExit):
                 preview.parser().parse_args(["image.png", "--preset", preset])
-        with self.assertRaisesRegex(ValueError, "only supported"):
-            preview.main(["image.png", "--demo", "on"])
+        with self.assertRaises(SystemExit):
+            preview.parser().parse_args(["image.png", "--demo", "on"])
 
     def test_constant_depth_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:

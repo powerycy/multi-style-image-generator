@@ -84,7 +84,7 @@
     {
       "id": 17,
       "prompt": "把我已有的敦煌图片转成点云",
-      "expected_output": "仅加载空间流程，复用底图，不重新生图，不强制读取画风参考；通过依赖运行器执行 pointcloud；默认三滑杆与重置，准确称单图深度点云。"
+      "expected_output": "仅加载空间流程，复用底图，不重新生图，不强制读取画风参考；通过依赖运行器执行 pointcloud；默认三滑杆、自由360度旋转，无演示或重置，准确称单图深度点云。"
     },
     {
       "id": 18,
@@ -103,8 +103,8 @@
     },
     {
       "id": 21,
-      "prompt": "这张图做成点云，无按钮无滑杆，自动侧面到正面演示",
-      "expected_output": "复用已有图片；--spatial-mode pointcloud --controls hidden --demo on；隐藏全部控制及说明浮层，演示角度受限，HTML可file://打开。"
+      "prompt": "这张图做成点云，无按钮无滑杆，可以360度旋转，不要演示或重置视角",
+      "expected_output": "复用已有图片；--spatial-mode pointcloud --controls hidden；隐藏全部控制及说明浮层，水平垂直均可自由360度旋转，松手保持视角，不提供演示或重置，HTML可file://打开。"
     },
     {
       "id": 22,

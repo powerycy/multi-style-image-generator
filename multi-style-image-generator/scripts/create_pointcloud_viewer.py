@@ -22,7 +22,6 @@ class ViewerOptions:
     point_size: float = 2.1
     focus: float = 0.46
     yaw: float = -0.42
-    demo: bool = False
     pitch: float = 0.18
     zoom: float = 2.25
     controls: str = "visible"
@@ -41,8 +40,6 @@ def build_document(
     grid: int = 250,
     options: ViewerOptions = ViewerOptions(),
 ) -> str:
-    if not -0.65 <= options.yaw <= 0.65 or not -0.35 <= options.pitch <= 0.35:
-        raise ValueError("point-cloud angles exceed supported single-image view")
     if not 32 <= grid <= 600:
         raise ValueError("point-cloud grid must be 32..600 columns")
     with Image.open(image_path) as image:
@@ -108,7 +105,6 @@ def main() -> None:
     parser.add_argument("image", type=Path)
     parser.add_argument("depth", type=Path)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--demo", choices=("on", "off"), default="off")
     parser.add_argument("--grid", type=int, default=250)
     parser.add_argument("--depth-scale", type=float, default=1.25)
     parser.add_argument("--point-size", type=float, default=2.1)
@@ -122,7 +118,6 @@ def main() -> None:
     options = ViewerOptions(
         depth_scale=args.depth_scale,
         point_size=args.point_size,
-        demo=args.demo == "on",
         focus=args.focus,
         yaw=args.yaw,
         pitch=args.pitch,
