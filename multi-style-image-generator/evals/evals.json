@@ -74,7 +74,47 @@
     {
       "id": 15,
       "prompt": "我已经提供了一张图片。使用 $multi-style-image-generator 生成空间景深图，把空间感和位移拉满，后景稍微虚化，不要双层和滑杆。",
-      "expected_output": "一次运行 scripts/run_with_deps.py create_spatial_preview.py；默认使用 Depth Anything V2 Small 生成真实 raw depth，再输出稳定化 depth PNG 和内嵌 RGB/depth 的 immersive-v18 单 mesh HTML；参数为 depthScale=1.80、motion=1.40、perspective=1.15、自动巡游 X/Y 振幅 0.42/0.22、farMask smoothstep(0.14,0.30)、五点采样半径 2.25px、混合强度 0.52；支持鼠标、触摸、deviceorientation 并在手动交互后回到自动巡游；无 HUD、无按钮、无滑杆、无双层人物蒙版/前景抠图/补洞纹理/卡片分层；如果真实模型失败必须明确报告，不得静默改用启发式深度或声称已经使用模型深度。"
+      "expected_output": "一次运行 scripts/run_with_deps.py create_spatial_preview.py，显式传 --controls hidden --depth-scale 1.8 --motion 1.4 --blur depth；默认使用 Depth Anything V2 Small 生成真实 raw depth，再输出稳定化 depth PNG 和内嵌 RGB/depth 的 immersive-v18 单 mesh HTML；参数为 depthScale=1.80、motion=1.40、perspective=1.15、自动巡游 X/Y 振幅 0.36/0.18、farMask smoothstep(0.14,0.30)、五点采样半径 2.25px、混合强度 0.52；支持鼠标、触摸、deviceorientation 并在手动交互后回到自动巡游；无 HUD、无按钮、无滑杆、无双层人物蒙版/前景抠图/补洞纹理/卡片分层；如果真实模型失败必须明确报告，不得静默改用启发式深度或声称已经使用模型深度。"
+    },
+    {
+      "id": 16,
+      "prompt": "生成毛线编织风格的敦煌石窟，不要文字",
+      "expected_output": "读取画风参考与生图流程，直接生图；主体与场景统一为毛线、钩针织物质感；无可读文字，保留石窟辨识度。"
+    },
+    {
+      "id": 17,
+      "prompt": "把我已有的敦煌图片转成点云",
+      "expected_output": "仅加载空间流程，复用底图，不重新生图，不强制读取画风参考；通过依赖运行器执行 pointcloud；默认三滑杆与重置，准确称单图深度点云。"
+    },
+    {
+      "id": 18,
+      "prompt": "我没有底图，生成黑神话风格的敦煌点云",
+      "expected_output": "先读画风与生图流程，生成并检查底图，再通过依赖运行器派生 pointcloud；不臆造背面，不把缺底图当成阻塞。"
+    },
+    {
+      "id": 19,
+      "prompt": "生成毛线编织风格的敦煌空间景深图，我没有图片",
+      "expected_output": "先生成并检查编织底图，再派生 mesh，保留底图主体与构图；默认显示三滑杆与巡游开关。"
+    },
+    {
+      "id": 20,
+      "prompt": "让这张已有图片有空间景深",
+      "expected_output": "不加载画风参考，不重新生图；默认三滑杆和巡游开关，0.62/0.56/1.15，自动0.36/0.18，不默认虚化。"
+    },
+    {
+      "id": 21,
+      "prompt": "这张图做成点云，无按钮无滑杆，自动侧面到正面演示",
+      "expected_output": "复用已有图片；--spatial-mode pointcloud --controls hidden --demo on；隐藏全部控制及说明浮层，演示角度受限，HTML可file://打开。"
+    },
+    {
+      "id": 22,
+      "prompt": "把这张无HUD的游戏图做成景深",
+      "expected_output": "保留原底图；无HUD只描述底图，默认仍显示三个滑杆和自动巡游按钮。"
+    },
+    {
+      "id": 23,
+      "prompt": "把全景视频做成双击可打开的HTML",
+      "expected_output": "读取视频流程，检查2:1与ffmpeg，file://优先内嵌帧序列；不使用原始video纹理作为本地默认。"
     }
   ]
 }

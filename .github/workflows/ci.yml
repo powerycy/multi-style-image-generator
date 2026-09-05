@@ -43,10 +43,42 @@ jobs:
       - name: Run spatial depth tests
         run: python -m unittest discover -s multi-style-image-generator/tests -v
       - name: Validate evaluations
-        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 15"
+        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 23"
       - name: Check video help
         run: python multi-style-image-generator/scripts/create_bigmodel_video.py --help
       - name: Check panorama help
         run: python multi-style-image-generator/scripts/create_panorama_viewer.py --help
       - name: Check dependency launcher help
         run: python multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py --help
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Install browser QA dependencies
+        run: |
+          python -m pip install "Pillow>=10,<13" "numpy>=1.26,<3" PyYAML
+          npm install --no-save playwright@1.61.1
+          npx playwright install --with-deps chromium
+      - name: Build offline fixtures through dependency runner
+        run: python multi-style-image-generator/tests/make_browser_fixtures.py work/browser-fixtures
+      - name: Validate Skill
+        run: |
+          python -c "import pathlib,yaml; p=pathlib.Path('multi-style-image-generator/SKILL.md'); m=yaml.safe_load(p.read_text().split('---')[1]); assert m['name']=='multi-style-image-generator'; assert len(m['description'])<1024"
+      - name: Point-cloud visual and behavior regression
+        run: node multi-style-image-generator/tests/qa_pointcloud.js work/browser-fixtures work/pointcloud-qa
+      - name: Spatial browser regression
+        run: node multi-style-image-generator/tests/qa_spatial_v18.js work/browser-fixtures/mesh-visible.html work/spatial-qa
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: browser-screenshots
+          path: |
+            work/pointcloud-qa
+            work/spatial-qa

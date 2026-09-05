@@ -121,6 +121,7 @@
   </div>
   <script>
     const CONFIG = __CONFIG__;
+    if (CONFIG.controls === 'hidden') document.querySelector('.controls').style.display = 'none';
     const canvas = document.getElementById('view');
     const gl = canvas.getContext('webgl', { antialias: true, preserveDrawingBuffer: true });
     if (!gl) document.body.innerHTML = '<p style="padding:20px">当前浏览器不支持 WebGL。</p>';
@@ -232,12 +233,6 @@
     function buildMesh(depthImage) {
       const cols = CONFIG.cols;
       const rows = CONFIG.rows;
-      const depthCanvas = document.createElement('canvas');
-      depthCanvas.width = cols + 1;
-      depthCanvas.height = rows + 1;
-      const ctx = depthCanvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(depthImage, 0, 0, depthCanvas.width, depthCanvas.height);
-      const data = ctx.getImageData(0, 0, depthCanvas.width, depthCanvas.height).data;
       const aspect = CONFIG.width / CONFIG.height;
       const positions = [];
       const uvs = [];
@@ -246,7 +241,7 @@
       for (let y = 0; y <= rows; y++) {
         for (let x = 0; x <= cols; x++) {
           const i = (y * (cols + 1) + x) * 4;
-          const d = data[i] / 255;
+          const d = CONFIG.depthValues[i / 4];
           const centeredDepth = (d - 0.48);
           const px = ((x / cols) - 0.5) * aspect * 2.0;
           const py = (0.5 - (y / rows)) * 2.0;
@@ -261,7 +256,10 @@
           const b = a + 1;
           const c = a + cols + 1;
           const d = c + 1;
-          indices.push(a, c, b, b, c, d);
+          for (const triangle of [[a, c, b], [b, c, d]]) {
+            const depths = triangle.map(i => CONFIG.depthValues[i]);
+            if (Math.max(...depths) - Math.min(...depths) <= CONFIG.edgeThreshold) indices.push(...triangle);
+          }
         }
       }
 
@@ -414,6 +412,7 @@
     }
 
     async function requestOrientationPermission() {
+      if (CONFIG.interaction !== 'mixed') return;
       const Orientation = window.DeviceOrientationEvent;
       if (!Orientation) return;
       if (typeof Orientation.requestPermission === 'function') {

@@ -92,7 +92,7 @@
 <body>
   <canvas id="view" aria-label="单图深度点云交互预览"></canvas>
   <div class="hud">
-    <strong>单图彩色点云预览</strong>
+    <strong>单图深度点云</strong>
     鼠标或手指拖拽旋转，滚轮或触控板缩放。这是由单张图片和深度图生成的彩色点云，不是完整的 3D 重建。
   </div>
   <div class="controls">
@@ -108,11 +108,16 @@
       <input id="focus" type="range" min="0" max="1" step="0.01">
       <output id="focusValue" for="focus"></output>
     </label>
+    <button id="demo" type="button" aria-pressed="false">演示：侧面 → 正面 → 侧面</button>
     <button id="reset" type="button">重置视角</button>
   </div>
   <script>
     const CONFIG = __CONFIG__;
     const DEFAULTS = __DEFAULTS__;
+    if (CONFIG.controls === 'hidden') {
+      document.querySelector('.controls').style.display = 'none';
+      document.querySelector('.hud').style.display = 'none';
+    }
     const canvas = document.getElementById('view');
     const gl = canvas.getContext('webgl', {
       antialias: true,
@@ -130,10 +135,11 @@
       attribute vec3 aColor;
       uniform mat4 uMatrix;
       uniform float uPointSize;
+      uniform float uReferenceDistance;
       varying vec3 vColor;
       void main() {
         gl_Position = uMatrix * vec4(aPosition, 1.0);
-        gl_PointSize = uPointSize;
+        gl_PointSize = clamp(uPointSize * uReferenceDistance / max(gl_Position.w, 0.5), 1.0, 24.0);
         vColor = aColor;
       }
     `;
@@ -145,7 +151,7 @@
         float radius = dot(point, point);
         if (radius > 0.25) discard;
         float edge = 1.0 - smoothstep(0.18, 0.25, radius);
-        gl_FragColor = vec4(vColor * (0.94 + edge * 0.06), 1.0);
+        gl_FragColor = vec4(vColor, edge);
       }
     `;
 
@@ -156,6 +162,8 @@
       depthScale: DEFAULTS.depthScale,
       pointSize: DEFAULTS.pointSize,
       focus: DEFAULTS.focus,
+      demo: DEFAULTS.demo,
+      demoStart: performance.now(),
       drag: false,
       lastX: 0,
       lastY: 0,
@@ -186,6 +194,7 @@
     const aColor = gl.getAttribLocation(program, 'aColor');
     const uMatrix = gl.getUniformLocation(program, 'uMatrix');
     const uPointSize = gl.getUniformLocation(program, 'uPointSize');
+    const uReferenceDistance = gl.getUniformLocation(program, 'uReferenceDistance');
     let pointCount = 0;
     let basePoints = null;
 
@@ -208,30 +217,28 @@
       colorContext.drawImage(image, 0, 0, cols, rows);
       const colorData = colorContext.getImageData(0, 0, cols, rows).data;
 
-      const depthCanvas = document.createElement('canvas');
-      depthCanvas.width = cols;
-      depthCanvas.height = rows;
-      const depthContext = depthCanvas.getContext('2d', { willReadFrequently: true });
-      depthContext.drawImage(depth, 0, 0, cols, rows);
-      const depthData = depthContext.getImageData(0, 0, cols, rows).data;
-
-      pointCount = cols * rows;
-      basePoints = new Float32Array(pointCount * 3);
-      const colors = new Float32Array(pointCount * 3);
+      // Preserve high-precision, nearest-sampled depth; canvas resampling blends silhouettes.
+      const depths = CONFIG.depthValues;
+      const points = [], colorValues = [];
       const aspect = CONFIG.width / CONFIG.height;
       for (let y = 0; y < rows; y += 1) {
         for (let x = 0; x < cols; x += 1) {
-          const pointIndex = y * cols + x;
-          const imageIndex = pointIndex * 4;
-          const vertexIndex = pointIndex * 3;
-          basePoints[vertexIndex] = ((x / (cols - 1)) - 0.5) * aspect * 2.0;
-          basePoints[vertexIndex + 1] = (0.5 - (y / (rows - 1))) * 2.0;
-          basePoints[vertexIndex + 2] = depthData[imageIndex] / 255;
-          colors[vertexIndex] = colorData[imageIndex] / 255;
-          colors[vertexIndex + 1] = colorData[imageIndex + 1] / 255;
-          colors[vertexIndex + 2] = colorData[imageIndex + 2] / 255;
+          const i = y * cols + x, d = depths[i];
+          const neighbors = [depths[y * cols + Math.max(0, x-1)], depths[y * cols + Math.min(cols-1, x+1)],
+            depths[Math.max(0, y-1) * cols+x], depths[Math.min(rows-1, y+1) * cols+x]];
+          const lo = Math.min(...neighbors), hi = Math.max(...neighbors);
+          // Reject isolated spikes and intermediate samples spanning a discontinuity.
+          if (neighbors.every(n => Math.abs(n-d) > 0.10)) continue;
+          if (hi-lo > 0.12 && d-lo > 0.035 && hi-d > 0.035) continue;
+          // Keep fine relief dense; stagger half the flat-region samples to expose point structure.
+          if (hi-lo < 0.012 && (x+y) % 2) continue;
+          points.push((x/(cols-1)-0.5)*aspect*2, (0.5-y/(rows-1))*2, d);
+          colorValues.push(colorData[i*4]/255, colorData[i*4+1]/255, colorData[i*4+2]/255);
         }
       }
+      basePoints = new Float32Array(points);
+      const colors = new Float32Array(colorValues);
+      pointCount = points.length / 3;
       gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
       rebuildPositions();
@@ -308,12 +315,15 @@
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       if (!pointCount) return;
       gl.enable(gl.DEPTH_TEST);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.useProgram(program);
       const matrix = multiply(
         perspective(45 * Math.PI / 180, canvas.width / canvas.height, 0.01, 20),
-        multiply(translate(-state.zoom), multiply(rotateX(state.pitch), rotateY(state.yaw))),
+        multiply(translate(-state.zoom * 1.4 * Math.max(1, CONFIG.width / CONFIG.height / (canvas.width / canvas.height))), multiply(rotateX(state.pitch), rotateY(state.yaw))),
       );
       gl.uniformMatrix4fv(uMatrix, false, matrix);
+      gl.uniform1f(uReferenceDistance, 3.6 * Math.max(1, CONFIG.width / CONFIG.height / (canvas.width / canvas.height)));
       gl.uniform1f(uPointSize, state.pointSize * Math.min(window.devicePixelRatio || 1, 2));
 
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -326,6 +336,7 @@
     }
 
     canvas.addEventListener('pointerdown', (event) => {
+      setDemo(false);
       state.drag = true;
       state.lastX = event.clientX;
       state.lastY = event.clientY;
@@ -343,9 +354,9 @@
     });
     canvas.addEventListener('pointermove', (event) => {
       if (!state.drag) return;
-      state.yaw += (event.clientX - state.lastX) * 0.006;
+      state.yaw = clampYaw(state.yaw + (event.clientX - state.lastX) * 0.006);
       state.pitch += (event.clientY - state.lastY) * 0.006;
-      state.pitch = Math.max(-1.1, Math.min(1.1, state.pitch));
+      state.pitch = clampPitch(state.pitch);
       state.lastX = event.clientX;
       state.lastY = event.clientY;
       render();
@@ -374,6 +385,7 @@
     bindSlider('focus', 'focus', 'focusValue', true);
 
     document.getElementById('reset').addEventListener('click', () => {
+      setDemo(false);
       Object.assign(state, {
         yaw: DEFAULTS.yaw,
         pitch: DEFAULTS.pitch,
@@ -394,11 +406,36 @@
       rebuildPositions();
     });
 
+    const clampYaw = value => Math.max(-0.65, Math.min(0.65, value));
+    const clampPitch = value => Math.max(-0.35, Math.min(0.35, value));
+    function demoPose(seconds) {
+      return {yaw: -0.48 * Math.cos(seconds * Math.PI / 6), pitch: 0.12};
+    }
+    function setDemo(enabled) {
+      state.demo = enabled;
+      state.demoStart = performance.now();
+      document.getElementById('demo').textContent = enabled ? '暂停演示' : '演示：侧面 → 正面 → 侧面';
+      document.getElementById('demo').setAttribute('aria-pressed', String(enabled));
+    }
+    document.getElementById('demo').addEventListener('click', () => setDemo(!state.demo));
+    setDemo(DEFAULTS.demo);
+    function animate(now) {
+      if (state.demo && !state.drag) {
+        Object.assign(state, demoPose((now-state.demoStart)/1000));
+        render();
+      }
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+
     window.__pointcloudDebug = {
-      getState: () => ({ ...state, pointCount, provenance: CONFIG.depthProvenance }),
+      getState: () => ({ ...state, pointCount, candidateCount: CONFIG.cols * CONFIG.rows, provenance: CONFIG.depthProvenance }),
+      demoPose,
+      setDemo,
       setView: (yaw, pitch, zoom = state.zoom) => {
-        state.yaw = yaw;
-        state.pitch = pitch;
+        setDemo(false);
+        state.yaw = clampYaw(yaw);
+        state.pitch = clampPitch(pitch);
         state.zoom = zoom;
         render();
       },

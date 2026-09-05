@@ -111,7 +111,7 @@ class RepositoryContractTests(unittest.TestCase):
                 tracked_developer_path_matches(Path(non_repository))
 
     def test_skill_routes_dependency_scripts_through_launcher(self):
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         self.assertIn("scripts/run_with_deps.py create_spatial_preview.py", skill)
         self.assertIn("scripts/run_with_deps.py normalize_equirectangular_aspect.py", skill)
 
@@ -202,7 +202,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn(b"NETSCAPE2.0", payload)
 
     def test_feature_introduction_uses_precise_generic_contract(self):
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         intro = skill.split("## 功能介绍模式", 1)[1].split("\n## ", 1)[0]
 
         self.assertIn("360° 全景图", intro)
@@ -217,7 +217,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("只有用户明确要求保留原服装", intro)
 
     def test_photo_reference_guidance_is_generic_and_bilingual(self):
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         reference = (
             ROOT
             / "multi-style-image-generator"
@@ -270,7 +270,7 @@ class RepositoryContractTests(unittest.TestCase):
         )
 
     def test_portrait_generation_defaults_to_world_integration(self):
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         photo_rules = skill.split("再判断是否有上传图片或照片参考：", 1)[1].split(
             "再判断界面模式：", 1
         )[0]
@@ -317,7 +317,7 @@ class RepositoryContractTests(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertIn(rule, qa)
 
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         portrait_contract = skill + qa + json.dumps(
             [item for item in json.loads(
                 (ROOT / "multi-style-image-generator" / "evals" / "evals.json").read_text(
@@ -346,7 +346,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("create_panorama_viewer.py", panorama_flow)
 
     def test_uploaded_person_rule_covers_generation_and_preserves_derived_assets(self):
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         photo_rules = skill.split("再判断是否有上传图片或照片参考：", 1)[1].split(
             "再判断界面模式：", 1
         )[0]
@@ -378,7 +378,7 @@ class RepositoryContractTests(unittest.TestCase):
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         portrait_panorama = [item for item in payload["evals"] if item["id"] == 14]
 
-        self.assertEqual(len(payload["evals"]), 15)
+        self.assertEqual(len(payload["evals"]), 23)
         self.assertEqual(len(portrait_panorama), 1)
         expected = portrait_panorama[0]["expected_output"]
         self.assertIn("默认重设计世界观服装和叙事动作", expected)
@@ -392,7 +392,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertNotIn("8–12 米", expected)
         self.assertNotIn("6–10%", expected)
 
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         preserved_routes = (
             "scripts/create_dynamic_panorama_viewer.py",
             "scripts/run_with_deps.py create_spatial_preview.py",
@@ -410,7 +410,7 @@ class RepositoryContractTests(unittest.TestCase):
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         onboarding = [item for item in payload["evals"] if item["id"] == 12]
 
-        self.assertEqual(len(payload["evals"]), 15)
+        self.assertEqual(len(payload["evals"]), 23)
         self.assertEqual(len(onboarding), 1)
         expected = onboarding[0]["expected_output"]
         self.assertIn("360° 全景图", expected)
@@ -419,7 +419,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("不得虚构具体服装", expected)
 
     def test_video_key_onboarding_uses_macos_keychain_without_chat_secrets(self):
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         self.assertIn("macOS 钥匙串", skill)
         self.assertIn("--replace-api-key", skill)
         self.assertIn("--forget-api-key", skill)
@@ -433,17 +433,17 @@ class RepositoryContractTests(unittest.TestCase):
         eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         key_onboarding = [item for item in payload["evals"] if item["id"] == 13]
-        self.assertEqual(len(payload["evals"]), 15)
+        self.assertEqual(len(payload["evals"]), 23)
         self.assertEqual(len(key_onboarding), 1)
         self.assertIn("不得要求用户把 SK 粘贴到对话中", key_onboarding[0]["expected_output"])
 
         workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
             encoding="utf-8"
         )
-        self.assertIn("assert len(data['evals']) == 15", workflow)
+        self.assertIn("assert len(data['evals']) == 23", workflow)
 
     def test_user_facing_panorama_labels_use_standard_term(self):
-        skill = self.skill_md.read_text(encoding="utf-8")
+        skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
         agent = (ROOT / "multi-style-image-generator" / "agents" / "openai.yaml").read_text(
             encoding="utf-8"
         )

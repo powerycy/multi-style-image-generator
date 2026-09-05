@@ -20,18 +20,14 @@ import create_spatial_photo_viewer as displacement_viewer  # noqa: E402
 import create_pointcloud_viewer as pointcloud_viewer  # noqa: E402
 import infer_depth_anything_v2  # noqa: E402
 import stabilize_depth_map  # noqa: E402
+from depth_geometry import read_depth, resize_depth, save_depth
 
 
 REAL_BACKENDS = ("depth-anything-v2-small", "apple-depth-pro")
 
 
 def _copy_stable_depth(source: Path, destination: Path, size: tuple[int, int]) -> Path:
-    with Image.open(source) as depth:
-        converted = depth.convert("L")
-        if converted.size != size:
-            converted = converted.resize(size, Image.Resampling.BICUBIC)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        converted.save(destination)
+    save_depth(resize_depth(read_depth(source), size), destination)
     return destination
 
 
@@ -49,12 +45,15 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--model-id", default=infer_depth_anything_v2.DEFAULT_MODEL)
     result.add_argument("--cache-dir", type=Path, help="Optional Hugging Face model cache directory.")
-    result.add_argument("--preset", choices=("immersive", "v18", "legacy"), default="immersive")
+    result.add_argument("--preset", choices=("immersive",), default="immersive",
+                        help="Accepted motion baseline. Removed no-op v18/legacy aliases; use --spatial-mode displacement for compatibility.")
     result.add_argument(
         "--spatial-mode",
         choices=("mesh", "displacement", "pointcloud"),
         default="mesh",
     )
+    result.add_argument("--controls", choices=("visible", "hidden"), default="visible")
+    result.add_argument("--demo", choices=("on", "off"), default="off", help="Point-cloud side/front/side orbit.")
     result.add_argument("--output", type=Path)
     result.add_argument("--out-dir", type=Path)
     result.add_argument("--raw-depth-output", type=Path)
@@ -74,7 +73,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--interaction", choices=("mixed", "pointer", "auto"), default="mixed")
     result.add_argument("--point-size", type=float, default=2.1)
     result.add_argument("--focus", type=float, default=0.46)
-    result.add_argument("--yaw", type=float, default=-0.33)
+    result.add_argument("--yaw", type=float, default=-0.42)
     result.add_argument("--pitch", type=float, default=0.18)
     result.add_argument("--zoom", type=float, default=2.25)
     return result
@@ -82,6 +81,10 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = parser().parse_args(argv)
+    if args.spatial_mode == "displacement" and args.controls == "visible":
+        raise ValueError("displacement has no controls; use --controls hidden or the default mesh mode")
+    if args.demo == "on" and args.spatial_mode != "pointcloud":
+        raise ValueError("--demo on is only supported for pointcloud")
     image = args.image.expanduser().resolve()
     if not image.is_file():
         raise FileNotFoundError(f"source image not found: {image}")
@@ -134,11 +137,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         options = pointcloud_viewer.ViewerOptions(
             depth_scale=args.depth_scale if args.depth_scale is not None else 1.25,
             point_size=args.point_size,
+            demo=args.demo == "on",
             focus=args.focus,
             yaw=args.yaw,
             pitch=args.pitch,
             zoom=args.zoom,
             provenance=provenance,
+            controls=args.controls,
         )
         pointcloud_viewer.write_viewer(
             image,
@@ -148,6 +153,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             options=options,
         )
     elif args.spatial_mode == "displacement":
+        output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(
             displacement_viewer.build_html(
                 displacement_viewer.image_to_data_uri(image),
@@ -171,6 +177,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             blur=args.blur,
             interaction=args.interaction,
             provenance=provenance,
+            controls=args.controls,
         )
         mesh_viewer.write_viewer(image, stable, output, args.grid or 150, options)
 
@@ -181,10 +188,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         "html": str(output),
         "depth_provenance": provenance,
         "preset": (
-            "pointcloud-reference"
+            "pointcloud-adaptive"
             if args.spatial_mode == "pointcloud"
-            else "immersive-v18" if args.preset in {"immersive", "v18"}
-            else "legacy-explicit"
+            else "immersive-v18" if args.spatial_mode == "mesh" else "displacement-explicit"
         ),
         "spatial_mode": args.spatial_mode,
     }

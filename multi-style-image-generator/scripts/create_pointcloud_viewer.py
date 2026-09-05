@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from PIL import Image
+from depth_geometry import sampled_depth
 
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "pointcloud-template.html"
@@ -20,9 +21,11 @@ class ViewerOptions:
     depth_scale: float = 1.25
     point_size: float = 2.1
     focus: float = 0.46
-    yaw: float = -0.33
+    yaw: float = -0.42
+    demo: bool = False
     pitch: float = 0.18
     zoom: float = 2.25
+    controls: str = "visible"
     provenance: str = "supplied-depth"
 
 
@@ -38,8 +41,10 @@ def build_document(
     grid: int = 250,
     options: ViewerOptions = ViewerOptions(),
 ) -> str:
-    if grid < 32:
-        raise ValueError("point-cloud grid must be at least 32 columns")
+    if not -0.65 <= options.yaw <= 0.65 or not -0.35 <= options.pitch <= 0.35:
+        raise ValueError("point-cloud angles exceed supported single-image view")
+    if not 32 <= grid <= 600:
+        raise ValueError("point-cloud grid must be 32..600 columns")
     with Image.open(image_path) as image:
         width, height = image.size
     with Image.open(depth_path) as depth:
@@ -48,18 +53,27 @@ def build_document(
                 f"depth dimensions {depth.size} do not match RGB dimensions {(width, height)}"
             )
 
+    if options.controls not in {"visible", "hidden"}:
+        raise ValueError("controls must be visible or hidden")
+    if min(width, height) < 2:
+        raise ValueError("point-cloud source must be at least 2 pixels per axis")
     aspect = width / height
+    cols = min(grid, width)
+    rows = min(height, max(2, round(cols / aspect)))
     config = {
         "image": data_uri(image_path),
         "depth": data_uri(depth_path),
         "width": width,
         "height": height,
-        "cols": grid,
-        "rows": max(24, round(grid / aspect)),
+        "cols": cols,
+        "rows": rows,
+        "depthValues": sampled_depth(depth_path, (cols, rows)),
+        "controls": options.controls,
         "depthProvenance": options.provenance,
     }
     defaults = asdict(options)
     defaults.pop("provenance")
+    defaults.pop("controls")
     defaults = {
         "depthScale": defaults.pop("depth_scale"),
         "pointSize": defaults.pop("point_size"),
@@ -94,23 +108,27 @@ def main() -> None:
     parser.add_argument("image", type=Path)
     parser.add_argument("depth", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--demo", choices=("on", "off"), default="off")
     parser.add_argument("--grid", type=int, default=250)
     parser.add_argument("--depth-scale", type=float, default=1.25)
     parser.add_argument("--point-size", type=float, default=2.1)
     parser.add_argument("--focus", type=float, default=0.46)
-    parser.add_argument("--yaw", type=float, default=-0.33)
+    parser.add_argument("--yaw", type=float, default=-0.42)
     parser.add_argument("--pitch", type=float, default=0.18)
     parser.add_argument("--zoom", type=float, default=2.25)
+    parser.add_argument("--controls", choices=("visible", "hidden"), default="visible")
     parser.add_argument("--provenance", default="supplied-depth")
     args = parser.parse_args()
     options = ViewerOptions(
         depth_scale=args.depth_scale,
         point_size=args.point_size,
+        demo=args.demo == "on",
         focus=args.focus,
         yaw=args.yaw,
         pitch=args.pitch,
         zoom=args.zoom,
         provenance=args.provenance,
+        controls=args.controls,
     )
     write_viewer(
         args.image.expanduser().resolve(),

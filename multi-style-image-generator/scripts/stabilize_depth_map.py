@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import numpy as np
-from PIL import Image, ImageFilter
+from depth_geometry import read_depth, resize_depth, save_depth
 
 
 def stabilize_depth(
@@ -20,21 +20,32 @@ def stabilize_depth(
     smooth_radius: float = 1.15,
     smooth_mix: float = 0.22,
 ) -> Path:
-    with Image.open(raw_path) as source:
-        image = source.convert("L")
-    if size and image.size != size:
-        image = image.resize(size, Image.Resampling.BICUBIC)
-
-    values = np.asarray(image, dtype=np.float32)
+    values = read_depth(raw_path)
+    if not 0 <= smooth_mix <= 1 or not 0 <= smooth_radius <= 4:
+        raise ValueError("smooth mix must be 0..1 and radius 0..4")
+    if not 0 <= low_percentile < high_percentile <= 100:
+        raise ValueError("invalid normalization percentiles")
     low, high = np.percentile(values, [low_percentile, high_percentile])
     if high <= low:
         raise ValueError("raw depth map has no usable dynamic range")
     normalized = np.clip((values - low) / (high - low), 0.0, 1.0)
-    base = Image.fromarray(np.uint8(np.round(normalized * 255)), mode="L")
-    smooth = base.filter(ImageFilter.GaussianBlur(radius=smooth_radius))
-    stable = Image.blend(base, smooth, smooth_mix)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    stable.save(output_path)
+    # Bilateral filter: only similar depths contribute across an edge.
+    radius = int(np.ceil(smooth_radius * 2))
+    weighted = np.zeros_like(normalized)
+    weights = np.zeros_like(normalized)
+    padded = np.pad(normalized, radius, mode="edge")
+    height, width = normalized.shape
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            neighbor = padded[radius+dy:radius+dy+height, radius+dx:radius+dx+width]
+            spatial = np.exp(-(dx*dx + dy*dy) / (2 * max(smooth_radius, 0.01)**2))
+            weight = spatial * np.exp(-((neighbor - normalized) / 0.035)**2 / 2)
+            weighted += weight * neighbor
+            weights += weight
+    stable = normalized * (1 - smooth_mix) + weighted / weights * smooth_mix
+    if size and stable.shape[::-1] != size:
+        stable = resize_depth(stable, size)
+    save_depth(stable, output_path)
     return output_path
 
 
