@@ -1,6 +1,6 @@
 ---
 name: multi-style-image-generator
-description: Generate or stylize images and prompts in game, fantasy, pixel or crochet/yarn styles; derive spatial depth, single-image point clouds, 360° panoramas and CogVideoX videos. Use for 出图、照片风格化、毛线编织、空间景深图、点云、360° 全景图 or video requests.
+description: Generate or stylize images and prompts in game, fantasy, pixel or crochet/yarn styles; derive spatial depth, single-image point clouds, 360° panoramas, explorable panorama point-cloud scenes and CogVideoX videos. Use for 出图、照片风格化、毛线编织、空间景深图、点云、360° 全景图、360° 点云漫游 or video requests.
 ---
 
 # 多风格图片生成
@@ -13,11 +13,11 @@ description: Generate or stylize images and prompts in game, fantasy, pixel or c
 | --- | --- |
 | 画风 | 原神、黑神话、修仙、诡秘、宝可梦、星露谷、潜水员戴夫、毛线编织/钩针等；只有需要生成或改造画风时，读取 [画风参考](references/game-visual-styles.md) 与 [生图流程](references/generation-workflow.md)。 |
 | 来源 | 已有底图、人物/场景参考，或没有底图。已有底图直接派生时保留主体、身份、构图和环境；不要重新生图。人物照片风格化保留身份锚点，默认重设计衣着、动作与光照，具体约束见生图流程。 |
-| 表现形式 | 普通图片、空间景深、单图深度点云、360° 全景、视频；按下面入口加载对应流程。 |
+| 表现形式 | 普通图片、空间景深、单图深度点云、360° 全景、360° 点云漫游、视频；按下面入口加载对应流程。 |
 
 **组合顺序**：例如“生成黑神话风格的敦煌点云/景深”且没有底图，先生成并检查底图，再用底图派生对应表现形式。已有底图则复用；只有明确要求先改造画风时才先风格化并检查。不要因缺底图把生成请求误判为只处理已有图片，也不要无必要重新付费生图。
 
-**已有图片直接做景深/点云**：只读 [空间与点云流程](references/spatial-workflow.md)，不强制读取大型画风参考或人物生图规则。空间景深默认 mesh；只有明确要求点云才选 pointcloud。两者都不臆造物体背面，不称作完整真 3D。
+**已有普通图片直接做景深/单图点云**：只读 [空间与点云流程](references/spatial-workflow.md)，不强制读取大型画风参考或人物生图规则。空间景深默认 mesh；只有明确要求点云才选 pointcloud。两者都不臆造物体背面，不称作完整真 3D。
 
 ## 执行入口与渐进披露
 
@@ -25,6 +25,7 @@ description: Generate or stylize images and prompts in game, fantasy, pixel or c
 - **只写提示词**：明确要求 prompt/不用出图时，只返回 [生图流程](references/generation-workflow.md) 中的结构化提示词代码块，不调用生图。
 - **空间景深 / 单图深度点云**：读取 [空间与点云流程](references/spatial-workflow.md)，统一运行 `python3 scripts/run_with_deps.py create_spatial_preview.py <image> --out-dir <directory>`；点云加 `--spatial-mode pointcloud`。
 - **360° 全景图**：读取 [全景流程](references/panorama-workflow.md)，从 2:1 等距柱状投影源图制作预览；需要比例规格化时运行 `scripts/run_with_deps.py normalize_equirectangular_aspect.py`。人物生成或人物全景 QA 再读 [人物全景质检](references/portrait-panorama-qa.md)。
+- **360° 点云漫游 / 全景点云场景**：读取 [全景点云流程](references/panorama-pointcloud-workflow.md)。已有全景直接复用；普通图片先按用户要求扩展全景，再运行独立入口 `scripts/run_with_deps.py create_panorama_pointcloud.py`。不要误走单图深度点云入口。
 - **动态增强全景**：没有明确要求真视频时，可用 `scripts/create_dynamic_panorama_viewer.py` 的静图实时特效；说明这不是视频。
 - **视频 / 360° 全景图生视频模式**：只读 [视频流程](references/video-workflow.md)。`scripts/create_bigmodel_video.py` 默认 5 秒，只支持 5 秒或 10 秒。全景视频从 2:1 图片生成 2:1 视频；`file://` 交付统一优先 `scripts/create_panorama_frame_sequence_viewer.py` 内嵌帧序列，先检测 ffmpeg；原始视频纹理 viewer 只用于确定的 HTTP 访问。缺少 ffmpeg 时报告，不自动安装系统软件。
 
@@ -33,7 +34,7 @@ description: Generate or stylize images and prompts in game, fantasy, pixel or c
 - 需要 Pillow、NumPy、PyTorch 或 Transformers 的脚本一律通过 `scripts/run_with_deps.py`；启动器管理 Skill 内 `.venv` 和依赖，模型复用缓存。不得用全局 pip 或系统安装替代。
 - 真实深度默认 Depth Anything V2 Small；失败报告 backend、错误与阶段，不静默降级。只有用户明确接受非模型预览才用 heuristic，并标记 `heuristic-fallback`。
 - 景深默认显示“空间感、移动幅度、透视”三条滑杆与自动巡游开关：`0.62 / 0.56 / 1.15`，自动 X/Y `0.36 / 0.18`。只有明确要求无控制条时才加 `--controls hidden`；“底图无 UI/HUD”不代表隐藏交互控件。
-- 点云默认保留深度、点大小、焦平面；支持自由 360° 旋转，不提供演示或重置视角。准确称作“单图深度点云”。HTML 自包含，可用 `file://` 打开。
+- 单图点云默认保留深度、点大小、焦平面；支持自由 360° 旋转，不提供演示或重置视角。准确称作“单图深度点云”。HTML 自包含，可用 `file://` 打开。
 - 视频凭据保存在 macOS 钥匙串；不要要求用户在对话中粘贴 API Key。更换/删除分别用 `--replace-api-key` / `--forget-api-key`，详情按需读视频流程。
 - 衍生交付附 HTML 与 stable depth，推理或复用 raw 时附 raw depth，并准确标注来源。图像生成结果没有可落盘数据时如实说明，不声称已创建 HTML。
 

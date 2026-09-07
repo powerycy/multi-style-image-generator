@@ -115,6 +115,21 @@
       "id": 23,
       "prompt": "把全景视频做成双击可打开的HTML",
       "expected_output": "读取视频流程，检查2:1与ffmpeg，file://优先内嵌帧序列；不使用原始video纹理作为本地默认。"
+    },
+    {
+      "id": 24,
+      "prompt": "把这张已有全景做成 360 点云漫游，不要重新生成图。",
+      "expected_output": "复用全景；读取 panorama-pointcloud-workflow；运行独立入口 create_panorama_pointcloud.py，默认 completion none；输出可手动旋转和移动的 HTML、PLY 与来源报告，不走单图点云入口，不生图。"
+    },
+    {
+      "id": 25,
+      "prompt": "把刚刚的室外崖壁全景扩成可以大范围移动的点云场景。",
+      "expected_output": "复用已有全景与深度；可明确采用 terrain 近似补全并说明未恢复建筑内部和背面；检查多位置，不以无报错代替视觉检查；保存视角，不添加自动演示或重置。"
+    },
+    {
+      "id": 26,
+      "prompt": "这张室内全景做成点云，可以转身看看，保留原来的场景。",
+      "expected_output": "使用全景点云独立入口和 completion none；不套用室外地形补全，不重新生图。"
     }
   ]
 }

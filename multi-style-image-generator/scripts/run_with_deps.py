@@ -14,6 +14,7 @@ from typing import Optional, Sequence
 
 
 ALLOWED_TARGETS = {
+    "create_panorama_pointcloud.py",
     "create_pointcloud_viewer.py",
     "create_spatial_preview.py",
     "create_spatial_photo_viewer.py",
