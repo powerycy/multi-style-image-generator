@@ -47,18 +47,11 @@
 |---|---|
 | <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深图动态演示 GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="敦煌单图彩色点云从一侧经过正面旋转至另一侧的动态演示 GIF"> |
 
-### 360° 点云漫游
+| 360° 点云漫游 | 动态全景预览 |
+|---|---|
+| <img src="assets/examples/dunhuang-360-pointcloud.gif" width="420" alt="敦煌 360° 点云场景环顾与移动实录 GIF"> | <img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="360° 全景动态增强录屏 GIF"> |
 
-<img src="assets/examples/dunhuang-360-pointcloud.gif" width="480" alt="敦煌 360° 点云场景环顾与移动实录 GIF">
-
-复用现有敦煌场景录制：12 秒循环展示完整一周环顾与小范围移动。场景由全景图与相对深度构成，示例启用了室外地形近似补全；建筑内部和背面未被真实恢复。
-
-<details>
-<summary>查看 360° 全景图的动态增强演示</summary>
-
-<img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="360° 全景图动态增强演示 GIF">
-
-</details>
+左侧：现有敦煌点云场景的 12 秒环顾与移动实录，采用相对深度及室外地形近似补全。右侧：静态全景的实时动态增强录屏，不是 AI 生成视频。
 
 ## 核心能力
 

@@ -47,18 +47,11 @@ The same style template can be carried into different presentation formats when 
 |---|---|
 | <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="Spatial-depth image animated demonstration GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="Dunhuang single-image colored point cloud rotating from one side through the front to the other side"> |
 
-### 360° Point-Cloud Walkthrough
+| 360° Point-Cloud Walkthrough | Dynamic Panorama Preview |
+|---|---|
+| <img src="assets/examples/dunhuang-360-pointcloud.gif" width="420" alt="Recorded look-around and movement in the Dunhuang point-cloud scene"> | <img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="Recorded real-time dynamic panorama effects"> |
 
-<img src="assets/examples/dunhuang-360-pointcloud.gif" width="480" alt="Recorded full-circle look-around and movement in the Dunhuang point-cloud scene">
-
-A 12-second loop recorded from the existing Dunhuang scene, showing a full turn and a small camera translation. The scene uses panorama-derived relative depth with optional approximate outdoor terrain completion enabled for this example. Hidden building interiors and backsides are not recovered.
-
-<details>
-<summary>View the dynamic-enhanced 360° panorama demonstration</summary>
-
-<img src="assets/examples/dynamic-360-panorama-preview.gif" width="420" alt="360° panorama dynamic-enhanced demonstration GIF">
-
-</details>
+Left: a 12-second look-around and movement recording of the existing Dunhuang point cloud, using relative depth and approximate outdoor terrain completion. Right: a recording of real-time effects on a static panorama, not AI-generated video.
 
 ## Core Capabilities
 
