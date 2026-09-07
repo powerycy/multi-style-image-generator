@@ -1,4 +1,4 @@
-<!-- README_SYNC: source=working-tree; updated=2026-09-02 -->
+<!-- README_SYNC: source=working-tree; updated=2026-09-07 -->
 
 # Multi Style Image Generator
 
@@ -9,7 +9,7 @@
   <a href="https://github.com/shengjidaguai-china">点击组织首页右上角 <strong>Follow</strong></a>，及时获取新项目与共建活动
 </p>
 
-面向 Codex 的多风格图片生成 Skill。使用时先选择「风格模板」，再选择「表现形式」：风格模板覆盖开放世界、暗黑中式神话、修仙、蒸汽神秘学、像素与毛线编织/钩针等方向；表现形式支持 2D 图片、360° 全景图、空间景深图和彩色点云，并保留动态视频工作流。
+面向 Codex 的多风格图片生成 Skill。使用时先选择「风格模板」，再选择「表现形式」：风格模板覆盖开放世界、暗黑中式神话、修仙、蒸汽神秘学、像素与毛线编织/钩针等方向；表现形式支持 2D 图片、360° 全景图、空间景深图、单图彩色点云和 360° 点云漫游，并保留动态视频工作流。
 
 如果这个项目对你有帮助，欢迎在 GitHub 上 Star ⭐️ 支持后续更新。
 
@@ -47,6 +47,12 @@
 |---|---|
 | <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="空间景深图动态演示 GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="敦煌单图彩色点云从一侧经过正面旋转至另一侧的动态演示 GIF"> |
 
+### 360° 点云漫游
+
+<img src="assets/examples/dunhuang-360-pointcloud.gif" width="480" alt="敦煌 360° 点云场景环顾与移动实录 GIF">
+
+复用现有敦煌场景录制：12 秒循环展示完整一周环顾与小范围移动。场景由全景图与相对深度构成，示例启用了室外地形近似补全；建筑内部和背面未被真实恢复。
+
 <details>
 <summary>查看 360° 全景图的动态增强演示</summary>
 
@@ -66,6 +72,7 @@
 - 360° 全景图工作流：支持 360°×180° 等距柱状投影提示、2:1 比例规格化、静态 HTML 预览和动态增强 HTML 预览。
 - 空间景深图 / 空间照片预览：自动复用用户上传或刚生成的图片，默认通过 Depth Anything V2 生成真实深度和稳定深度图，再创建可自动巡游、拖动查看，并带“空间感 / 移动幅度 / 透视”三滑杆的单层 depth mesh HTML。
 - 彩色点云预览：把单张图片与真实深度采样为可旋转、缩放的彩色点云，带深度、点大小和焦平面控制；这是单图深度点云，不冒充完整 3D 重建。
+- 360° 点云漫游：复用 2:1 全景及已有深度，或运行真实深度推理；支持自由环顾、移动、升降和视角保存，导出离线 HTML、PLY 点云及来源报告。室外地形近似补全需明确选择。
 - 动态视频模式：支持 BigModel/CogVideoX 文生视频和图生视频；macOS 首次安全输入后保存到钥匙串，后续自动读取，不把 key 写进文件或对话。
 
 ## 支持风格
@@ -127,6 +134,7 @@ python3 scripts/run_with_deps.py create_spatial_preview.py --help
 | 360° 全景图 | `360°×180° 等距柱状投影全景图，2:1 宽高比，左右边缘无缝衔接` |
 | 空间景深图 / 空间照片 | `根据当前图片生成空间景深图`；默认自动生成真实深度、稳定深度图和交互 HTML，无需指定参数 |
 | 彩色点云 | `根据当前图片生成彩色点云图`；默认生成真实深度、稳定深度图和可旋转点云 HTML |
+| 360° 点云漫游 | `把这张全景图做成可以移动的 360° 点云场景，不要重新生图` |
 | 图生视频 | `把这张图变成 5 秒动态视频` |
 | 360° 全景图生视频 | `先生成 2:1 全景图，再图生视频，并生成 360° 全景视频预览 HTML` |
 
@@ -255,6 +263,18 @@ python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_prev
 ```bash
 python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode pointcloud --out-dir path/to/output
 ```
+
+### 360° 点云场景
+
+与单图点云使用独立入口，输入应为经过检查的 2:1 等距柱状投影全景。已有全景直接复用，普通图片则先按用户要求扩展全景。
+
+```bash
+python3 multi-style-image-generator/scripts/run_with_deps.py create_panorama_pointcloud.py path/to/panorama.png --out-dir path/to/output
+```
+
+已有稳定深度时加 `--depth path/to/stable-depth.png`，跳过推理；已有原始深度时用 `--raw-depth`。默认不添加隐藏表面；明确需要室外地形补全时加 `--completion terrain --movement-range 95`，范围单位为相对场景单位。
+
+支持手动水平与垂直 360° 旋转、WASD 移动、Q/E 升降、Shift 加速，手机提供移动按钮；保存视角与位置，不自动演示或重置。交付自包含 HTML、带颜色和来源分类的 PLY、稳定深度及 JSON 来源报告。大幅移动可能出现拉伸和缺口，不能替代准确的多视角 3D 重建。参数与边界见 [全景点云流程](multi-style-image-generator/references/panorama-pointcloud-workflow.md)。
 
 ## 视频模式说明
 

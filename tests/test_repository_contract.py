@@ -158,6 +158,7 @@ class RepositoryContractTests(unittest.TestCase):
             "assets/examples/spatial-depth-preview.gif",
             "assets/examples/dynamic-360-panorama-preview.gif",
             "assets/examples/dunhuang-colored-pointcloud-preview.gif",
+            "assets/examples/dunhuang-360-pointcloud.gif",
         )
         for path in gif_paths:
             with self.subTest(path=path):
@@ -378,7 +379,7 @@ class RepositoryContractTests(unittest.TestCase):
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         portrait_panorama = [item for item in payload["evals"] if item["id"] == 14]
 
-        self.assertEqual(len(payload["evals"]), 23)
+        self.assertEqual(len(payload["evals"]), 26)
         self.assertEqual(len(portrait_panorama), 1)
         expected = portrait_panorama[0]["expected_output"]
         self.assertIn("默认重设计世界观服装和叙事动作", expected)
@@ -410,7 +411,7 @@ class RepositoryContractTests(unittest.TestCase):
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         onboarding = [item for item in payload["evals"] if item["id"] == 12]
 
-        self.assertEqual(len(payload["evals"]), 23)
+        self.assertEqual(len(payload["evals"]), 26)
         self.assertEqual(len(onboarding), 1)
         expected = onboarding[0]["expected_output"]
         self.assertIn("360° 全景图", expected)
@@ -433,14 +434,14 @@ class RepositoryContractTests(unittest.TestCase):
         eval_path = ROOT / "multi-style-image-generator" / "evals" / "evals.json"
         payload = json.loads(eval_path.read_text(encoding="utf-8"))
         key_onboarding = [item for item in payload["evals"] if item["id"] == 13]
-        self.assertEqual(len(payload["evals"]), 23)
+        self.assertEqual(len(payload["evals"]), 26)
         self.assertEqual(len(key_onboarding), 1)
         self.assertIn("不得要求用户把 SK 粘贴到对话中", key_onboarding[0]["expected_output"])
 
         workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
             encoding="utf-8"
         )
-        self.assertIn("assert len(data['evals']) == 23", workflow)
+        self.assertIn("assert len(data['evals']) == 26", workflow)
 
     def test_user_facing_panorama_labels_use_standard_term(self):
         skill = self.skill_md.read_text(encoding="utf-8") + "\n" + "\n".join(p.read_text(encoding="utf-8") for p in sorted((self.skill_md.parent / "references").glob("*-workflow.md")))
@@ -456,7 +457,7 @@ class RepositoryContractTests(unittest.TestCase):
 
         self.assertIn("360°×180° 等距柱状投影全景图", self.readme_zh)
         self.assertIn("360° 全景图", skill)
-        self.assertIn("360° 全景预览", agent)
+        self.assertIn("360° 全景", agent)
         self.assertIn("360° 全景动画预览", frame_viewer)
         self.assertNotIn("## 360 环景说明", self.readme_zh)
 

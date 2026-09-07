@@ -1,4 +1,4 @@
 interface:
   display_name: "多风格图片生成"
-  short_description: "多风格出图、真实深度景深、彩色点云、视频与 360° 全景预览"
+  short_description: "多风格出图、真实深度景深、视频、360° 全景与点云场景漫游"
   default_prompt: "使用 $multi-style-image-generator 处理这张图片，并按我的要求生成景深交互图或彩色点云预览。"

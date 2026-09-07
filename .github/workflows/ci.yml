@@ -43,7 +43,7 @@ jobs:
       - name: Run spatial depth tests
         run: python -m unittest discover -s multi-style-image-generator/tests -v
       - name: Validate evaluations
-        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 23"
+        run: python -c "import json, pathlib; data=json.loads(pathlib.Path('multi-style-image-generator/evals/evals.json').read_text()); assert len(data['evals']) == 26"
       - name: Check video help
         run: python multi-style-image-generator/scripts/create_bigmodel_video.py --help
       - name: Check panorama help
@@ -75,6 +75,8 @@ jobs:
         run: node multi-style-image-generator/tests/qa_pointcloud.js work/browser-fixtures work/pointcloud-qa
       - name: Spatial browser regression
         run: node multi-style-image-generator/tests/qa_spatial_v18.js work/browser-fixtures/mesh-visible.html work/spatial-qa
+      - name: Panorama point-cloud browser regression
+        run: node multi-style-image-generator/tests/qa_panorama_pointcloud.js work/browser-fixtures/panorama-360-pointcloud.html work/panorama-cloud-qa
       - uses: actions/upload-artifact@v6
         if: always()
         with:
@@ -82,3 +84,4 @@ jobs:
           path: |
             work/pointcloud-qa
             work/spatial-qa
+            work/panorama-cloud-qa

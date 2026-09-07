@@ -1,4 +1,4 @@
-<!-- README_SYNC: source=working-tree; updated=2026-09-02 -->
+<!-- README_SYNC: source=working-tree; updated=2026-09-07 -->
 
 # Multi Style Image Generator
 
@@ -9,7 +9,7 @@
   <a href="https://github.com/shengjidaguai-china"><strong>Follow the organization</strong></a> for new projects and community activities
 </p>
 
-A Codex Skill for multi-style image generation. First choose a style template, then choose a presentation format. Style templates cover open-world fantasy, dark Chinese myth, cultivation, occult steampunk, pixel art, crochet/yarn-knit, and more. Presentation formats include 2D images, 360° panoramas, spatial-depth images, and colored point clouds, with a separate video workflow also available.
+A Codex Skill for multi-style image generation. First choose a style template, then choose a presentation format. Style templates cover open-world fantasy, dark Chinese myth, cultivation, occult steampunk, pixel art, crochet/yarn-knit, and more. Presentation formats include 2D images, 360° panoramas, spatial-depth images, single-image colored point clouds, and 360° point-cloud walkthroughs, with a separate video workflow also available.
 
 If this project is useful to you, please consider starring it on GitHub to support future updates.
 
@@ -47,6 +47,12 @@ The same style template can be carried into different presentation formats when 
 |---|---|
 | <img src="assets/examples/spatial-depth-preview.gif" width="420" alt="Spatial-depth image animated demonstration GIF"> | <img src="assets/examples/dunhuang-colored-pointcloud-preview.gif" width="420" alt="Dunhuang single-image colored point cloud rotating from one side through the front to the other side"> |
 
+### 360° Point-Cloud Walkthrough
+
+<img src="assets/examples/dunhuang-360-pointcloud.gif" width="480" alt="Recorded full-circle look-around and movement in the Dunhuang point-cloud scene">
+
+A 12-second loop recorded from the existing Dunhuang scene, showing a full turn and a small camera translation. The scene uses panorama-derived relative depth with optional approximate outdoor terrain completion enabled for this example. Hidden building interiors and backsides are not recovered.
+
 <details>
 <summary>View the dynamic-enhanced 360° panorama demonstration</summary>
 
@@ -66,6 +72,7 @@ The same style template can be carried into different presentation formats when 
 - 360° panorama workflow: 360°×180° equirectangular prompting, 2:1 ratio normalization, static HTML previews, and dynamic-enhanced HTML previews.
 - Spatial depth image / spatial photo preview workflow: automatically reuse an uploaded or recently generated image, infer real model depth with Depth Anything V2, stabilize the depth map, and create a single-depth-mesh HTML viewer with automatic drift, direct interaction, and Space / Motion / Perspective sliders.
 - Colored point-cloud preview: sample the source image and real depth into rotatable, zoomable colored points with depth, point-size, and focal-plane controls. This is a single-image depth point cloud, not a full 3D reconstruction.
+- 360° point-cloud walkthroughs: reuse a 2:1 panorama and existing depth, or infer real model depth; freely look around, move, change elevation, and save the view. Export offline HTML, PLY, and provenance reports. Approximate outdoor terrain completion is an explicit option.
 - BigModel/CogVideoX video workflow: supports text-to-video and image-to-video; on macOS the first secure entry is saved to Keychain and automatically reused without writing the key to files or chat.
 
 ## Supported Style Directions
@@ -127,6 +134,7 @@ Common phrases:
 | 360° panorama | `360°×180° equirectangular panorama, 2:1 aspect ratio, seamless left and right edges` |
 | Spatial depth image / spatial photo | `Create a spatial depth image from the current image`; real depth, stabilized depth, and interactive HTML are generated automatically without mode parameters |
 | Colored point cloud | `Create a colored point cloud from the current image`; real depth, stabilized depth, and a rotatable point-cloud HTML viewer are generated automatically |
+| 360° point-cloud walkthrough | `Turn this panorama into a movable 360° point-cloud scene without regenerating the image` |
 | Image-to-video | `Turn this image into a 5-second video` |
 | 360° panorama image-to-video | `First generate a 2:1 panorama, then animate it and create a 360° panorama video preview HTML file` |
 
@@ -255,6 +263,18 @@ Point-cloud mode shares the same real-depth entry point as spatial depth but use
 ```bash
 python3 multi-style-image-generator/scripts/run_with_deps.py create_spatial_preview.py path/to/image.png --spatial-mode pointcloud --out-dir path/to/output
 ```
+
+### 360° Point-Cloud Scenes
+
+This uses a separate entry point from single-image point clouds. Input must be a checked 2:1 equirectangular panorama. Reuse an existing panorama; expand an ordinary image into a panorama only when requested.
+
+```bash
+python3 multi-style-image-generator/scripts/run_with_deps.py create_panorama_pointcloud.py path/to/panorama.png --out-dir path/to/output
+```
+
+Add `--depth path/to/stable-depth.png` to reuse stable depth without inference, or `--raw-depth` for existing raw depth. The default adds no hidden surfaces. When approximate outdoor terrain completion is requested, add `--completion terrain --movement-range 95`; distances use relative scene units.
+
+The viewer supports unrestricted horizontal and vertical 360° rotation, WASD movement, Q/E elevation, Shift acceleration, mobile movement buttons, and saved views and positions, with no automatic demo or reset. Outputs include self-contained HTML, colored PLY with source classifications, stable depth, and a JSON provenance report. Large movements can reveal stretching and gaps; this is not accurate multi-view 3D reconstruction. See the [panorama point-cloud workflow](multi-style-image-generator/references/panorama-pointcloud-workflow.md) for parameters and limitations.
 
 ## Video Mode Notes
 
